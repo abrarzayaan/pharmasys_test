@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'apps.profiles',
     'apps.products',
     'apps.cart',
+    'apps.coupons',
 
 ]
 
