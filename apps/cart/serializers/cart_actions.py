@@ -1,0 +1,149 @@
+from rest_framework import serializers
+from apps.cart.services import CartService
+
+from apps.cart.models import Cart, CartItem
+from apps.products.models import ProductVariant, Inventory
+
+
+class AddToCartSerializer(serializers.Serializer):
+    product_variant_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+    def validate(self, attrs):
+        variant_id = attrs["product_variant_id"]
+        quantity = attrs["quantity"]
+
+        # Variant Exists
+        try:
+            variant = ProductVariant.objects.get(
+                id=variant_id,
+                status="active"
+            )
+        except ProductVariant.DoesNotExist:
+            raise serializers.ValidationError({
+                "product_variant_id": "Product variant not found."
+            })
+
+        # Inventory Check
+        try:
+            inventory = CartService.get_inventory(variant)
+        except Inventory.DoesNotExist:
+            raise serializers.ValidationError({
+                "product_variant_id": "Inventory not found."
+            })
+
+        if inventory.available_stock < quantity:
+            raise serializers.ValidationError({
+                "quantity": f"Only {inventory.available_stock} item(s) available."
+            })
+
+        # Min Qty
+        if quantity < variant.min_order_qty:
+            raise serializers.ValidationError({
+                "quantity": f"Minimum order quantity is {variant.min_order_qty}."
+            })
+
+        # Max Qty
+        if (
+            variant.max_order_qty is not None
+            and quantity > variant.max_order_qty
+        ):
+            raise serializers.ValidationError({
+                "quantity": f"Maximum order quantity is {variant.max_order_qty}."
+            })
+
+        attrs["variant"] = variant
+        attrs["inventory"] = inventory
+
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+
+        cart, _ = Cart.objects.get_or_create(user=user)
+
+        variant = self.validated_data["variant"]
+        quantity = self.validated_data["quantity"]
+
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product_variant=variant,
+            defaults={
+                "quantity": quantity
+            }
+        )
+
+        if not created:
+            new_quantity = cart_item.quantity + quantity
+
+            if (
+                variant.max_order_qty is not None
+                and new_quantity > variant.max_order_qty
+            ):
+                raise serializers.ValidationError({
+                    "quantity": f"Maximum order quantity is {variant.max_order_qty}."
+                })
+
+            inventory = self.validated_data["inventory"]
+
+            if new_quantity > inventory.available_stock:
+                raise serializers.ValidationError({
+                    "quantity": f"Only {inventory.available_stock} item(s) available."
+                })
+
+            cart_item.quantity = new_quantity
+            cart_item.save(update_fields=["quantity", "updated_at"])
+
+        return cart_item
+
+
+class UpdateCartItemSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField(min_value=1)
+
+    def validate(self, attrs):
+        cart_item = self.context["cart_item"]
+        quantity = attrs["quantity"]
+
+        variant = cart_item.product_variant
+
+        try:
+            inventory = CartService.get_inventory(variant)
+        except Inventory.DoesNotExist:
+            raise serializers.ValidationError(
+                "Inventory not found."
+            )
+
+        if quantity > inventory.available_stock:
+            raise serializers.ValidationError({
+                "quantity": f"Only {inventory.available_stock} item(s) available."
+            })
+
+        if quantity < variant.min_order_qty:
+            raise serializers.ValidationError({
+                "quantity": f"Minimum order quantity is {variant.min_order_qty}."
+            })
+
+        if (
+            variant.max_order_qty is not None
+            and quantity > variant.max_order_qty
+        ):
+            raise serializers.ValidationError({
+                "quantity": f"Maximum order quantity is {variant.max_order_qty}."
+            })
+
+        return attrs
+
+    def save(self):
+        cart_item = self.context["cart_item"]
+
+        cart_item.quantity = self.validated_data["quantity"]
+        cart_item.save(update_fields=["quantity", "updated_at"])
+
+        return cart_item
+
+
+class RemoveCartItemSerializer(serializers.Serializer):
+
+    def save(self):
+        cart_item = self.context["cart_item"]
+        cart_item.delete()
