@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/profiles/', include('apps.profiles.urls')), # <- এই লাইনটি যোগ করো
     path('api/products/', include('apps.products.urls')),
     path('api/', include('apps.cart.urls')),
+    path("api/coupons/",include("apps.coupons.urls"),),
     
     # Swagger API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
