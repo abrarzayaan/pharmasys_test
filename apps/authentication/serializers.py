@@ -64,14 +64,7 @@ class RegisterSerializer(serializers.Serializer):
                 ConsumerProfile.objects.create(user=user)
             
             elif role_name == "vendor":
-                shop_name = f"{user.first_name}'s Shop"
-                base_slug = slugify(shop_name)
-                slug = base_slug
-                counter = 1
-                while VendorProfile.objects.filter(slug=slug).exists():
-                    slug = f"{base_slug}-{counter}"
-                    counter += 1
-                VendorProfile.objects.create(user=user, name=shop_name, slug=slug)
+                VendorProfile.objects.create(user=user)
             
             elif role_name == "rider":
                 RiderProfile.objects.create(user=user)

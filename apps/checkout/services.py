@@ -1,0 +1,260 @@
+from decimal import Decimal
+
+from rest_framework.exceptions import ValidationError
+
+from apps.profiles.models import Address
+from apps.cart.models import Cart
+from apps.coupons.services import CouponService
+from apps.products.models.inventories import Inventory
+from apps.products.models.inventories import InventoryStatusChoices
+
+
+class CheckoutService:
+
+    @staticmethod
+    def validate_cart(user):
+        """
+        Validate user's cart.
+        """
+
+        try:
+            cart = Cart.objects.prefetch_related(
+                "items__product_variant",
+                "items__product_variant__product",
+            ).get(user=user)
+
+        except Cart.DoesNotExist:
+            raise ValidationError(
+                "Cart not found."
+            )
+
+        if not cart.items.exists():
+            raise ValidationError(
+                "Your cart is empty."
+            )
+
+        return cart
+
+    @staticmethod
+    def validate_address(user, address_id):
+        """
+        Validate shipping address.
+        """
+
+        try:
+            address = Address.objects.get(
+                id=address_id,
+                user=user,
+                status="active",
+            )
+
+        except Address.DoesNotExist:
+            raise ValidationError(
+                "Please add a valid delivery address."
+            )
+
+        return address
+
+    @staticmethod
+    def validate_stock(cart):
+        """
+        Validate inventory stock.
+        """
+
+        for item in cart.items.select_related(
+            "product_variant",
+            "product_variant__product",
+        ):
+
+            variant = item.product_variant
+
+            inventory = (
+                Inventory.objects
+                .filter(
+                    variant=variant,
+                    status__in=[
+                        InventoryStatusChoices.IN_STOCK,
+                        InventoryStatusChoices.LOW_STOCK,
+                    ],
+                )
+                .order_by("-stock_qty")
+                .first()
+            )
+
+            if not inventory:
+                raise ValidationError(
+                    f"{variant.product.name} is currently unavailable."
+                )
+
+            if inventory.available_stock < item.quantity:
+                raise ValidationError(
+                    f"Only {inventory.available_stock} item(s) available for "
+                    f"{variant.product.name} ({variant.variant_name})."
+                )
+        return True
+            
+    @staticmethod
+    def calculate_subtotal(cart):
+        """
+        Calculate cart subtotal.
+        """
+        return cart.total_price
+
+    @staticmethod
+    def apply_coupon(coupon_code, subtotal):
+        """
+        Validate and apply coupon.
+        """
+
+        if not coupon_code:
+            return None, Decimal("0.00")
+
+        is_valid, result = CouponService.validate_coupon(
+            code=coupon_code,
+            subtotal=subtotal,
+        )
+
+        if not is_valid:
+            raise ValidationError(result)
+
+        coupon = result
+
+        discount = CouponService.calculate_discount(
+            coupon=coupon,
+            subtotal=subtotal,
+        )
+
+        return coupon, discount
+
+    @staticmethod
+    def calculate_tax(subtotal, discount):
+        """
+        Tax calculation.
+
+        Currently disabled.
+        Future:
+            Tax = (subtotal - discount) * tax_rate
+        """
+
+        return Decimal("0.00")
+
+    @staticmethod
+    def calculate_delivery_charge(address):
+        """
+        Delivery charge calculation.
+
+        Future:
+        - Dhaka
+        - Outside Dhaka
+        - Express Delivery
+        """
+
+        return Decimal("0.00")
+
+    @staticmethod
+    def calculate_grand_total(
+        subtotal,
+        discount,
+        tax,
+        delivery_charge,
+    ):
+        """
+        Final payable amount.
+        """
+
+        return (
+            subtotal
+            - discount
+            + tax
+            + delivery_charge
+        )            
+    
+    @staticmethod
+    def generate_checkout(user, address_id, coupon_code=None):
+        """
+        Generate complete checkout summary.
+        """
+
+        # Step-1: Validate Cart
+        cart = CheckoutService.validate_cart(user)
+
+        # Step-2: Validate Address
+        address = CheckoutService.validate_address(
+            user=user,
+            address_id=address_id,
+        )
+
+        # Step-3: Validate Inventory
+        CheckoutService.validate_stock(cart)
+
+        # Step-4: Calculate Subtotal
+        subtotal = CheckoutService.calculate_subtotal(cart)
+
+        # Step-5: Apply Coupon
+        coupon, discount = CheckoutService.apply_coupon(
+            coupon_code=coupon_code,
+            subtotal=subtotal,
+        )
+
+        # Step-6: Tax
+        tax = CheckoutService.calculate_tax(
+            subtotal=subtotal,
+            discount=discount,
+        )
+
+        # Step-7: Delivery Charge
+        delivery_charge = CheckoutService.calculate_delivery_charge(
+            address=address,
+        )
+
+        # Step-8: Grand Total
+        grand_total = CheckoutService.calculate_grand_total(
+            subtotal=subtotal,
+            discount=discount,
+            tax=tax,
+            delivery_charge=delivery_charge,
+        )
+
+        # Step-9: Cart Items
+        items = []
+
+        for item in cart.items.select_related(
+            "product_variant",
+            "product_variant__product",
+        ):
+            items.append(
+                {
+                    "product_variant_id": item.product_variant.id,
+                    "product_name": item.product_variant.product.name,
+                    "variant_name": item.product_variant.variant_name,
+                    "quantity": item.quantity,
+                    "unit_price": item.unit_price,
+                    "total_price": item.total_price,
+                }
+            )
+
+        # Step-10: Coupon Data
+        coupon_data = None
+
+        if coupon:
+            coupon_data = {
+                "code": coupon.code,
+                "discount": discount,
+            }
+
+        # Step-11: Pricing
+        pricing = {
+            "subtotal": subtotal,
+            "discount": discount,
+            "tax": tax,
+            "delivery_charge": delivery_charge,
+            "grand_total": grand_total,
+        }
+
+        # Step-12: Final Response
+        return {
+            "items": items,
+            "pricing": pricing,
+            "coupon": coupon_data,
+            "address_id": address.id,
+        }
