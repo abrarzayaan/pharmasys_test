@@ -2,8 +2,6 @@ from rest_framework import serializers
 from apps.profiles.models import Address, ConsumerProfile, VendorProfile, RiderProfile
 
 class AddressSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
-
     class Meta:
         model = Address
         exclude = ['user', 'created_at', 'updated_at']

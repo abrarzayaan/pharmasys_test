@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.products.models import ProductVariant
+from apps.profiles.models import VendorProfile
 
 
 class Cart(models.Model):
