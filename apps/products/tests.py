@@ -3,7 +3,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.products.models import Brand, Category, Product
+from apps.products.models import Brand, Category, Product, ProductVariant
+from apps.profiles.models import VendorProfile
 
 
 class ProductPermissionTests(APITestCase):
@@ -58,3 +59,56 @@ class ProductPermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(Product.objects.filter(name='Vitamin C').exists())
+
+
+class SubCategoryVariantListTests(APITestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            phone_number='3333333333',
+            email='vendor2@example.com',
+            username='vendor2',
+            password='StrongPass123!',
+        )
+        self.vendor_profile = VendorProfile.objects.create(
+            user=self.user,
+            name='Vendor Two',
+            slug='vendor-two',
+            status='active',
+        )
+        self.main_category = Category.objects.create(name='Medicines', slug='medicines', status='active')
+        self.sub_category = Category.objects.create(
+            name='Pain Relief',
+            slug='pain-relief',
+            parent=self.main_category,
+            status='active',
+        )
+        self.brand = Brand.objects.create(name='TestBrand', slug='testbrand', status='active')
+        self.product = Product.objects.create(
+            vendor=self.vendor_profile,
+            category=self.sub_category,
+            brand=self.brand,
+            name='Paracetamol 250mg',
+            slug='paracetamol-250mg',
+            sku='SKU-SUB-1',
+            barcode='BAR-SUB-1',
+            status='active',
+            approval_status='approved',
+        )
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            variant_name='10 Pack',
+            sku='SKU-VAR-1',
+            barcode='BAR-VAR-1',
+            price='12.50',
+            sale_price='10.00',
+            status='active',
+        )
+
+    def test_returns_variants_for_active_subcategory_products(self):
+        self.client.force_authenticate(self.user)
+        url = reverse('subcategory-product-variants', kwargs={'subcategory_id': self.sub_category.id})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['results'][0]['id'], self.variant.id)
