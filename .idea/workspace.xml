@@ -2,13 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c4577433-32a7-4a06-a0ee-93b4194fa7ca" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/1e7e8809-ded6-4d91-ae13-3d126dbfa42a.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/1e7e8809-ded6-4d91-ae13-3d126dbfa42a.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/authentication/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/authentication/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/cart/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/cart/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/profiles/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
