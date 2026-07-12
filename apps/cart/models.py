@@ -27,7 +27,9 @@ class Cart(models.Model):
         db_table = "cart"
 
     def __str__(self):
-        return f"Cart - {self.user.username}"
+        if self.consumer_profile and self.consumer_profile.user:
+            return f"Cart - {self.consumer_profile.user.username}"
+        return "Cart - Anonymous"
 
     @property
     def total_price(self):
