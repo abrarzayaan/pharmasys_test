@@ -1,5 +1,8 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
+# pyrefly: ignore [missing-import]
 from django.utils.text import slugify
+# pyrefly: ignore [missing-import]
 from apps.products.models import Product
 
 
@@ -51,6 +54,19 @@ class ProductSerializer(serializers.ModelSerializer):
         # ভিউ (View) থেকে পাস হওয়া রিকোয়েস্ট অবজেক্ট থেকে কারেন্ট লগইনড ইউজারকে নেওয়া হচ্ছে
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
-            validated_data['vendor'] = request.user
+            from apps.profiles.models import VendorProfile
+            if hasattr(request.user, 'vendor_profile'):
+                validated_data['vendor'] = request.user.vendor_profile
+            else:
+                # If staff/admin and does not have vendor profile, create/get one
+                vendor_profile, _ = VendorProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'name': f"{request.user.username} Vendor",
+                        'slug': f"{request.user.username}-vendor",
+                        'status': 'active'
+                    }
+                )
+                validated_data['vendor'] = vendor_profile
             
         return super().create(validated_data)

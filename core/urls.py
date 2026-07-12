@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/', include('apps.cart.urls')),
     path("api/coupons/",include("apps.coupons.urls"),),
     path("api/checkout/", include("apps.checkout.urls")),
+    path("api/", include("apps.orders.urls")),
     
     # Swagger API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

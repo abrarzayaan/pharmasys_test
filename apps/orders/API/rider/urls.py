@@ -1,9 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from apps.orders.API.admin.views import AdminOrderViewSet
+from apps.orders.API.rider.views import RiderOrderViewSet
 
 router = DefaultRouter()
-router.register(r"", AdminOrderViewSet, basename="admin-orders")
+router.register(r"", RiderOrderViewSet, basename="rider-orders")
 
 urlpatterns = [
     path("", include(router.urls)),

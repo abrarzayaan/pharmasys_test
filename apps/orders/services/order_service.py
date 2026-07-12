@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+# pyrefly: ignore [missing-import]
 from django.db import transaction
 
 from apps.cart.models import Cart
@@ -102,7 +103,6 @@ class OrderService:
                         "variant_id": variant.id,
                         "name": variant.product.name,
                         "sku": variant.sku,
-                        "strength": variant.strength,
                         "price": str(variant.price),
                     },
                 )
@@ -126,10 +126,15 @@ class OrderService:
         if coupon is None:
             return None
 
-        return {
-            field: getattr(coupon, field)
-            for field in COUPON_SNAPSHOT_FIELDS
-        }
+        snapshot = {}
+        for field in COUPON_SNAPSHOT_FIELDS:
+            value = getattr(coupon, field)
+            # Decimal and other non-serializable types must be converted to string
+            from decimal import Decimal
+            if isinstance(value, Decimal):
+                value = str(value)
+            snapshot[field] = value
+        return snapshot
 
     @classmethod
     def get_cart(cls, consumer):
@@ -153,5 +158,35 @@ class OrderService:
             raise ValueError("Cart is empty.")
 
     @classmethod
-    def cancel_order(cls, order):
-        pass
+    @transaction.atomic
+    def cancel_order(cls, order, user):
+        """
+        Cancel a placed order.
+        """
+        from apps.orders.choices import OrderStatus
+        from apps.orders.services.admin_order_service import AdminOrderService
+        # pyrefly: ignore [missing-import]
+        from django.utils import timezone
+        # pyrefly: ignore [missing-import]  
+        from rest_framework.exceptions import ValidationError
+        
+        if order.order_status != OrderStatus.PLACED:
+            raise ValidationError("Only placed orders can be cancelled.")
+            
+        order.order_status = OrderStatus.CANCELLED
+        order.cancelled_at = timezone.now()
+        order.save(
+            update_fields=[
+                "order_status",
+                "cancelled_at",
+                "updated_at",
+            ]
+        )
+        
+        AdminOrderService._create_status_history(
+            order=order,
+            status=OrderStatus.CANCELLED,
+            changed_by=user,
+            remarks="Cancelled by customer.",
+        )
+        return order

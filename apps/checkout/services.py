@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+# pyrefly: ignore [missing-import]
 from rest_framework.exceptions import ValidationError
 
 from apps.profiles.models import Address, ConsumerProfile
@@ -46,7 +47,7 @@ class CheckoutService:
         try:
             address = Address.objects.get(
                 id=address_id,
-                consumer=user.consumer_profile,
+                user=user,
                 status="active",
             )
 

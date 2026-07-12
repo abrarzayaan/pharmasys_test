@@ -3,12 +3,12 @@ ORDER_NUMBER_PREFIX = "ORD"
 ORDER_NUMBER_LENGTH = 8
 
 ADDRESS_SNAPSHOT_FIELDS = (
-    "name",
-    "phone",
-    "division",
-    "district",
+    "receiver_name",
+    "receiver_phone",
+    "full_address",
     "area",
-    "address",
+    "city",
+    "label",
 )
 
 PRODUCT_SNAPSHOT_FIELDS = (

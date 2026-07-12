@@ -1,0 +1,303 @@
+__#__ PharmaSys-P2: Data Ingestion Step-by-Step Guide
+
+Step 1: Brand (ব্র্যান্ড)
+   │
+   ▼
+Step 2: Category (ক্যাটাগরি - প্যারেন্ট এবং চাইল্ড হ্যান্ডেলিং)
+   │
+   ▼
+Step 3: Product Attribute (অ্যাট্রিবিউট বা স্পেসিফিকেশন কী)
+   │
+   ▼
+Step 4: Core Product (মূল প্রোডাক্ট তৈরি)
+   │
+   ▼
+Step 5: Product Variant (প্যাক সাইজ, এমজি, বা স্ট্রেন্থ)
+   │
+   ▼
+Step 6: Product Image & Attribute Value (ছবি এবং অ্যাট্রিবিউটের আসল ভ্যালু)
+   │
+   ▼
+Step 7: Inventory (স্টক এবং ব্যাচ ইনপুট)
+
+
+🛑 প্রি-রিকুয়েজিট (Pre-requisite)
+ধরে নেওয়া হচ্ছে তোমার ডাটাবেসে ইতিমধ্যে একজন Vendor/User তৈরি করা আছে (যার ID: 1 এবং ইউজারনেম square_pharma) এবং তুমি তার টোকেন দিয়ে লগইন অবস্থায় আছ।
+
+
+🛠️ Step 1: Create Brands (ব্র্যান্ড তৈরি)
+প্রথমে আমরা কিছু নামী ব্র্যান্ড তৈরি করে নেব।
+
+API Endpoint: POST /api/products/brands/
+// Payload 1 (ID: 1)
+{"name": "Square Pharmaceuticals", "status": "active", "metadata": {"country_origin": "Bangladesh", "website": "https://squarepharma.com.bd"}}
+
+// Payload 2 (ID: 2)
+{"name": "Incepta Pharmaceuticals", "status": "active", "metadata": {"country_origin": "Bangladesh", "website": "https://inceptapharma.com"}}
+
+// Payload 3 (ID: 3)
+{"name": "Beximco Pharmaceuticals", "status": "active", "metadata": {"country_origin": "Bangladesh", "website": "https://beximco-pharma.com"}}
+
+
+
+🛠️ Step 2: Create Categories (প্যারেন্ট-চাইল্ড হ্যান্ডেলিং)
+এখানে আমরা ৪টি মেইন ক্যাটাগরি এবং তাদের আন্ডারে সাব-ক্যাটাগরি তৈরি করব। প্যারেন্ট হ্যান্ডেল করার নিয়ম হলো: মেইন ক্যাটাগরির সময় parent: null হবে, আর সাব-ক্যাটাগরির সময় ওই মেইন ক্যাটাগরির ID পাস করতে হবে।
+
+API Endpoint: POST /api/products/categories/
+
+ক্যাটাগরি ১: Medicines (ঔষধ)
+// মেইন ক্যাটাগরি (ধরি ID: 1 আসবে)
+{"name": "Medicines", "parent": null, "sort_order": 1, "status": "active", "metadata": {"show_on_homepage": true}}
+
+// সাব-ক্যাটাগরি (ধরি ID: 2 আসবে) -> এখানে parent: 1 (Medicines)
+{"name": "Prescription Drugs", "parent": 1, "sort_order": 1, "status": "active", "metadata": {"show_on_homepage": true}}
+
+
+ক্যাটাগরি ২: OTC & Consumer Health (সাধারণ উপশমকারী ঔষধ)
+// মেইন ক্যাটাগরি (ধরি ID: 3 আসবে)
+{"name": "OTC & Consumer Health", "parent": null, "sort_order": 2, "status": "active", "metadata": {"show_on_homepage": true}}
+
+// সাব-ক্যাটাগরি (ধরি ID: 4 আসবে) -> parent: 3
+{"name": "Pain & Fever", "parent": 3, "sort_order": 1, "status": "active", "metadata": {"show_on_homepage": true}}
+
+
+ক্যাটাগরি ৩: Medical Devices (চিকিৎসা সরঞ্জাম)
+// মেইন ক্যাটাগরি (ধরি ID: 5 আসবে)
+{"name": "Medical Devices", "parent": null, "sort_order": 3, "status": "active", "metadata": {"show_on_homepage": true}}
+
+// সাব-ক্যাটাগরি (ধরি ID: 6 আসবে) -> parent: 5
+{"name": "Monitoring Devices", "parent": 5, "sort_order": 1, "status": "active", "metadata": {"show_on_homepage": true}}
+
+
+ক্যাটাগরি ৪: Healthcare & Supplements (ভিটামিন ও সাপ্লিমেন্ট)
+// মেইন ক্যাটাগরি (ধরি ID: 7 আসবে)
+{"name": "Healthcare & Supplements", "parent": null, "sort_order": 4, "status": "active", "metadata": {"show_on_homepage": true}}
+
+// সাব-ক্যাটাগরি (ধরি ID: 8 আসবে) -> parent: 7
+{"name": "Vitamins", "parent": 7, "sort_order": 1, "status": "active", "metadata": {"show_on_homepage": true}}
+
+
+🛠️ Step 4 & 5: Core Products & Variants Dataset (২৪টি প্রোডাক্ট ডাটা)
+এখানে ৪টি চাইল্ড ক্যাটাগরির প্রতিটিতে ৬টি করে প্রোডাক্ট এবং তাদের ভ্যারিয়েন্ট অ্যাড করার কমপ্লিট ডাটা দেওয়া হলো।
+
+💡 নোট: প্রথমে Core Product এপিআই হিট করে প্রোডাক্ট তৈরি করবে, তারপর সেখান থেকে যে product ID পাবে, সেটি ব্যবহার করে Variant তৈরি করবে। ভেন্ডর আইডি ব্যাকএন্ডে অটোমেটিক রিকোয়েস্ট ইউজার থেকে সেট হবে।
+
+📂 ক্যাটাগরি ১: Prescription Drugs (Category ID: 2)
+১. Seclo 20
+Core Product (POST /api/products/products/):
+{"category": 2, "brand": 1, "name": "Seclo 20", "short_description": "Omeprazole 20mg", "long_description": "Used for hyperacidity and ulcers.", "product_type": "configurable", "is_prescription_required": true, "status": "active", "meta": {"tags": ["acidity", "gastric"]}}
+
+Variant (POST /api/products/variants/): (ধরি Product ID: 1)
+{"product": 1, "variant_name": "Seclo 20mg Capsule", "sku": "SQ-SEC-20", "barcode": "890123456001", "price": 7.00, "sale_price": 6.80, "cost_price": 5.00, "weight": 0.5, "dimensions": {"unit": "cm"}}
+
+২. Sergel 20
+Core Product:
+{"category": 2, "brand": 2, "name": "Sergel 20", "short_description": "Esomeprazole 20mg", "long_description": "Proton pump inhibitor for GERD.", "product_type": "configurable", "is_prescription_required": true, "status": "active", "meta": {"tags": ["gastric", "gerd"]}}
+
+Variant: (ধরি Product ID: 2)
+{"product": 2, "variant_name": "Sergel 20mg Tablet", "sku": "INC-SER-20", "barcode": "890123456002", "price": 8.00, "sale_price": 7.50, "cost_price": 5.50, "weight": 0.4, "dimensions": {"unit": "cm"}}
+
+৩. Napa 500
+Core Product:
+{"category": 2, "brand": 1, "name": "Napa 500", "short_description": "Paracetamol 500mg", "long_description": "Indicated for fever and mild to moderate pain.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["fever", "pain"]}}
+
+Variant: (ধরি Product ID: 3)
+{"product": 3, "variant_name": "Napa 500mg Tablet", "sku": "SQ-NAP-500", "barcode": "890123456003", "price": 1.50, "sale_price": 1.50, "cost_price": 1.00, "weight": 0.2, "dimensions": {"unit": "cm"}}
+
+৪. Fast 500
+Core Product:
+{"category": 2, "brand": 3, "name": "Fast 500", "short_description": "Paracetamol 500mg Fast Release", "long_description": "Rapid release formulation for quick pain relief.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["fever", "fast-pain"]}}
+
+Variant: (ধরি Product ID: 4)
+{"product": 4, "variant_name": "Fast 500mg Tablet", "sku": "BEX-FST-500", "barcode": "890123456004", "price": 2.00, "sale_price": 1.90, "cost_price": 1.30, "weight": 0.2, "dimensions": {"unit": "cm"}}
+
+৫. Azithrocin 500
+Core Product:
+{"category": 2, "brand": 1, "name": "Azithrocin 500", "short_description": "Azithromycin 500mg", "long_description": "Broad-spectrum antibiotic for bacterial infections.", "product_type": "configurable", "is_prescription_required": true, "status": "active", "meta": {"tags": ["antibiotic", "infection"]}}
+
+Variant: (ধরি Product ID: 5)
+{"product": 5, "variant_name": "Azithrocin 500mg Tablet", "sku": "SQ-AZI-500", "barcode": "890123456005", "price": 35.00, "sale_price": 34.00, "cost_price": 28.00, "weight": 0.8, "dimensions": {"unit": "cm"}}
+
+৬. Zimax 500
+Core Product:
+{"category": 2, "brand": 2, "name": "Zimax 500", "short_description": "Azithromycin 500mg", "long_description": "Macrolide antibiotic for respiratory tract infections.", "product_type": "configurable", "is_prescription_required": true, "status": "active", "meta": {"tags": ["antibiotic", "respiratory"]}}
+
+Variant: (ধরি Product ID: 6)
+{"product": 6, "variant_name": "Zimax 500mg Tablet", "sku": "INC-ZIM-500", "barcode": "890123456006", "price": 35.00, "sale_price": 33.50, "cost_price": 27.50, "weight": 0.8, "dimensions": {"unit": "cm"}}
+
+
+📂 ক্যাটাগরি ২: Pain & Fever (Category ID: 4)
+৭. Napa Extend
+Core Product:
+{"category": 4, "brand": 1, "name": "Napa Extend", "short_description": "Paracetamol 665mg", "long_description": "Extended release formula for 8 hours pain relief.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["backpain", "long-relief"]}}
+
+Variant: (ধরি Product ID: 7)
+{"product": 7, "variant_name": "Napa Extend 665mg", "sku": "SQ-NAP-EXT", "barcode": "890123456007", "price": 3.00, "sale_price": 3.00, "cost_price": 2.10, "weight": 0.3, "dimensions": {"unit": "cm"}}
+
+৮. Ace Plus
+Core Product:
+{"category": 4, "brand": 3, "name": "Ace Plus", "short_description": "Paracetamol & Caffeine", "long_description": "Caffeine alerts the brain and accelerates pain relief.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["headache", "caffeine"]}}
+
+Variant: (ধরি Product ID: 8)
+{"product": 8, "variant_name": "Ace Plus Tablet", "sku": "BEX-ACE-PLS", "barcode": "890123456008", "price": 3.00, "sale_price": 2.85, "cost_price": 2.00, "weight": 0.3, "dimensions": {"unit": "cm"}}
+
+৯. Flamax 400
+Core Product:
+{"category": 4, "brand": 2, "name": "Flamax 400", "short_description": "Ibuprofen 400mg", "long_description": "NSAID for anti-inflammatory pain relief.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["nsaid", "inflammation"]}}
+
+Variant: (ধরি Product ID: 9)
+{"product": 9, "variant_name": "Flamax 400mg Tablet", "sku": "INC-FLA-400", "barcode": "890123456009", "price": 5.00, "sale_price": 4.80, "cost_price": 3.50, "weight": 0.4, "dimensions": {"unit": "cm"}}
+
+১০. Tofila
+Core Product:
+{"category": 4, "brand": 1, "name": "Tofila", "short_description": "Tofisopam 50mg", "long_description": "Anxiolytic for tension and body aches related to anxiety.", "product_type": "simple", "is_prescription_required": true, "status": "active", "meta": {"tags": ["anxiety", "muscle-pain"]}}
+
+Variant: (ধরি Product ID: 10)
+{"product": 10, "variant_name": "Tofila 50mg Tablet", "sku": "SQ-TOF-50", "barcode": "890123456010", "price": 10.00, "sale_price": 9.50, "cost_price": 7.00, "weight": 0.3, "dimensions": {"unit": "cm"}}
+
+১১. Xeldrin
+Core Product:
+{"category": 4, "brand": 3, "name": "Xeldrin", "short_description": "Paracetamol & Aspirin", "long_description": "Migraine specific relief agent.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["migraine", "headache"]}}
+
+Variant: (ধরি Product ID: 11)
+{"product": 11, "variant_name": "Xeldrin Tablet", "sku": "BEX-XEL-DRN", "barcode": "890123456011", "price": 4.00, "sale_price": 4.00, "cost_price": 2.80, "weight": 0.3, "dimensions": {"unit": "cm"}}
+
+
+📂 ক্যাটাগরি ৩: Monitoring Devices (Category ID: 6)
+১৩. Square BP Monitor Pro
+Core Product:
+{"category": 6, "brand": 1, "name": "Square BP Monitor Pro", "short_description": "Digital Blood Pressure Monitor", "long_description": "Fully automatic upper arm blood pressure monitor.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["bp-machine", "digital"]}}
+
+Variant: (ধরি Product ID: 13)
+{"product": 13, "variant_name": "Standard Pack", "sku": "SQ-BPM-PRO", "barcode": "890123456013", "price": 2500.00, "sale_price": 2350.00, "cost_price": 1800.00, "weight": 450.0, "dimensions": {"length": 12.0, "width": 10.0, "height": 8.0, "unit": "cm"}}
+
+১৪. Incepta GlucoLeader
+Core Product:
+{"category": 6, "brand": 2, "name": "Incepta GlucoLeader", "short_description": "Blood Glucose Monitoring System", "long_description": "Fast 5 second test time with minimal blood sample.", "product_type": "configurable", "is_prescription_required": false, "status": "active", "meta": {"tags": ["diabetes", "sugar-test"]}}
+
+Variant: (ধরি Product ID: 14)
+{"product": 14, "variant_name": "GlucoLeader Meter Kit", "sku": "INC-GLM-KIT", "barcode": "890123456014", "price": 1500.00, "sale_price": 1400.00, "cost_price": 1050.00, "weight": 200.0, "dimensions": {"length": 10.0, "width": 5.0, "height": 2.0, "unit": "cm"}}
+
+১৫. PulseCheck Oximeter
+Core Product:
+{"category": 6, "brand": 3, "name": "PulseCheck Oximeter", "short_description": "Fingertip Pulse Oximeter", "long_description": "Measures SpO2 and Pulse Rate accurately within seconds.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["oximeter", "oxygen"]}}
+
+Variant: (ধরি Product ID: 15)
+{"product": 15, "variant_name": "Fingertip Device OCO", "sku": "BEX-PULSE-OX", "barcode": "890123456015", "price": 1200.00, "sale_price": 999.00, "cost_price": 700.00, "weight": 50.0, "dimensions": {"length": 6.0, "width": 3.0, "height": 3.0, "unit": "cm"}}
+
+১৬. ThermoSense Digital
+Core Product:
+{"category": 6, "brand": 1, "name": "ThermoSense Digital", "short_description": "Digital Thermometer", "long_description": "Rigid tip fast thermometer for oral and axillary use.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["thermometer", "fever-check"]}}
+
+Variant: (ধরি Product ID: 16)
+{"product": 16, "variant_name": "ThermoSense Rigid", "sku": "SQ-THM-DIG", "barcode": "890123456016", "price": 200.00, "sale_price": 180.00, "cost_price": 120.00, "weight": 25.0, "dimensions": {"length": 14.0, "width": 2.0, "height": 1.0, "unit": "cm"}}
+
+১৭. AirFlow Nebulizer
+Core Product:
+{"category": 6, "brand": 2, "name": "AirFlow Nebulizer", "short_description": "Compressor Nebulizer System", "long_description": "Effective medication delivery for asthma and COPD patients.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["nebulizer", "asthma"]}}
+
+Variant: (ধরি Product ID: 17)
+{"product": 17, "variant_name": "Home Compressor Model", "sku": "INC-NEB-COMP", "barcode": "890123456017", "price": 3200.00, "sale_price": 2950.00, "cost_price": 2200.00, "weight": 1200.0, "dimensions": {"length": 18.0, "width": 15.0, "height": 10.0, "unit": "cm"}}
+
+GlucoLeader Strips
+Core Product:
+{"category": 6, "brand": 2, "name": "GlucoLeader Strips", "short_description": "Blood Glucose Test Strips", "long_description": "Compatible only with Incepta GlucoLeader Meter.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["strips", "sugar-test"]}}
+
+Variant: (ধরি Product ID: 18)
+{"product": 18, "variant_name": "50 Strips Vial", "sku": "INC-GLS-50", "barcode": "890123456018", "price": 900.00, "sale_price": 880.00, "cost_price": 650.00, "weight": 30.0, "dimensions": {"unit": "cm"}}
+
+
+📂 ক্যাটাগরি ৪: Vitamins (Category ID: 8)
+১৯. Surbex-T
+Core Product:
+{"category": 8, "brand": 1, "name": "Surbex-T", "short_description": "Vitamin B-Complex & Vitamin C", "long_description": "Indicated for treatment of vitamin deficiencies.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["vitamin-b", "energy"]}}
+
+Variant: (ধরি Product ID: 19)
+{"product": 19, "variant_name": "Surbex-T 30s Bottle", "sku": "SQ-SRB-30", "barcode": "890123456019", "price": 240.00, "sale_price": 240.00, "cost_price": 180.00, "weight": 60.0, "dimensions": {"unit": "cm"}}
+
+২০. Becoazin
+Core Product:
+{"category": 8, "brand": 2, "name": "Becoazin", "short_description": "Vitamin B-Complex & Zinc", "long_description": "Promotes immunity and healthy nervous system function.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["zinc", "immunity"]}}
+
+Variant: (ধরি Product ID: 20)
+{"product": 20, "variant_name": "Becoazin Syrup 100ml", "sku": "INC-BCZ-100", "barcode": "890123456020", "price": 60.00, "sale_price": 60.00, "cost_price": 45.00, "weight": 150.0, "dimensions": {"unit": "cm"}}
+
+
+২১. CoralCal-D
+Core Product:
+{"category": 8, "brand": 3, "name": "CoralCal-D", "short_description": "Coral Calcium & Vitamin D3", "long_description": "Maintains bone health and teeth strength.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["calcium", "bones"]}}
+
+
+Variant: (ধরি Product ID: 21)
+{"product": 21, "variant_name": "CoralCal-D 30s Tablet", "sku": "BEX-CCD-30", "barcode": "890123456021", "price": 300.00, "sale_price": 285.00, "cost_price": 210.00, "weight": 70.0, "dimensions": {"unit": "cm"}}
+
+
+২২. Aristovit-M
+Core Product:
+{"category": 8, "brand": 1, "name": "Aristovit-M", "short_description": "Multivitamin & Multimineral", "long_description": "Comprehensive nutritional coverage from A to Z.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["multivitamin", "daily-health"]}}
+
+Variant: (ধরি Product ID: 22)
+{"product": 22, "variant_name": "Aristovit-M 30s Gold Pack", "sku": "SQ-ARV-30", "barcode": "890123456022", "price": 150.00, "sale_price": 145.00, "cost_price": 110.00, "weight": 65.0, "dimensions": {"unit": "cm"}}
+
+
+২৩. Vitavit-E 400
+Core Product:
+{"category": 8, "brand": 2, "name": "Vitavit-E 400", "short_description": "Vitamin E 400 IU", "long_description": "Antioxidant support for healthy skin and hair.", "product_type": "simple", "is_prescription_required": false, "status": "active", "meta": {"tags": ["vitamin-e", "antioxidant"]}}
+
+Variant: (ধরি Product ID: 23)
+{"product": 23, "variant_name": "Vitavit-E Softgel Capsule", "sku": "INC-VTE-400", "barcode": "890123456023", "price": 180.00, "sale_price": 175.00, "cost_price": 130.00, "weight": 40.0, "dimensions": {"unit": "cm"}}
+
+
+
+🛠️ Step 6: Create Attribute Values (EAV Dynamic Linking)
+প্রোডাক্ট এবং ভ্যারিয়েন্ট রেডি হওয়ার পর তাদের স্পেসিফিকেশনগুলো অ্যাসাইন করতে হবে।
+
+API Endpoint: POST /api/products/attribute-values/
+
+ঔষধের জন্য Text ভিত্তিক ভ্যালু (যেমন Seclo 20-এর জন্য):
+// জেনেরিক নাম ম্যাপ করা (Attribute 1 = Generic Name)
+{"product": 1, "variant": 1, "attribute": 1, "value_text": "Omeprazole"}
+
+// ডোজ ফর্ম ম্যাপ করা (Attribute 2 = Dosage Form)
+{"product": 1, "variant": 1, "attribute": 2, "value_text": "Capsule"}
+
+
+ডিভাইসের জন্য JSON ভিত্তিক স্পেক্স (যেমন BP Monitor-এর জন্য):
+// টেকনিক্যাল স্পেক্স (Attribute 3 = Technical Specifications)
+{
+    "product": 13,
+    "variant": 13,
+    "attribute": 3,
+    "value_json": {
+        "display": "LCD Digital",
+        "memory_slots": 90,
+        "power_source": "4 AA Batteries or Type-C Adapter"
+    }
+}
+
+
+
+🛠️ Step 7: Manage Inventories (স্টক ও ইনভেন্টরি ইনপুট)
+সবশেষে আমরা ভ্যারিয়েন্টগুলোর স্টক ইনফরমেশন পুশ করব। আমাদের সিরিয়ালাইজার অটোমেটিক status ক্যালকুলেট করে নেবে।
+
+API Endpoint: POST /api/products/inventories/
+
+স্যাম্পল এন্ট্রি ১: ইন-স্টক ঔষধ (Seclo 20)
+{"variant": 1, "stock_qty": 5000, "reserved_qty": 0, "damaged_qty": 5, "reorder_level": 200}
+
+স্যাম্পল এন্ট্রি ২: লো-স্টক মনিটরিং ডিভাইস (Square BP Monitor)
+{"variant": 13, "stock_qty": 15, "reserved_qty": 2, "damaged_qty": 0, "reorder_level": 20}
+
+(এই পে-লোডটি পাঠালে, যেহেতু Available Stock 15−2=13, যা Reorder Level ২০-এর নিচে, আমাদের সিরিয়ালাইজার এর স্ট্যাটাস স্বয়ংক্রিয়ভাবে low_stock হিসেবে ডাটাবেসে লক করবে।)
+
+
+
+{
+  "parent": 0,
+  "name": "Medicines",
+  "image": "",
+  "icon": "",
+  "sort_order": 1,
+  "status": "active",
+  "metadata": "{ "show_on_homepage": true, "seo_title": "", "seo_description": "" }"
+}
