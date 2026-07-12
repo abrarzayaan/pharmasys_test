@@ -4,6 +4,8 @@ from django.utils import timezone
 from .choices import DiscountType, CouponStatus
 from django.conf import settings
 
+from apps.profiles.models import ConsumerProfile
+
 
 class Coupon(models.Model):
     code = models.CharField(
@@ -88,34 +90,51 @@ class Coupon(models.Model):
         return self.code
     
 
-"""
 class CouponUsage(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="coupon_usages",
-    )
+    """
+    Tracks every successful coupon redemption.
+    """
+
     coupon = models.ForeignKey(
-        Coupon,
+        "Coupon",
         on_delete=models.CASCADE,
         related_name="usages",
     )
-    order = models.ForeignKey(
-        "orders.Order",
+
+    consumer = models.ForeignKey(
+        ConsumerProfile,
         on_delete=models.CASCADE,
         related_name="coupon_usages",
     )
+
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        related_name="coupon_usage",
+    )
+
     discount_amount = models.DecimalField(
-        max_digits=10,
+        max_digits=12,
         decimal_places=2,
     )
-    used_at = models.DateTimeField(auto_now_add=True)
+
+    used_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
     class Meta:
         db_table = "coupon_usages"
-        ordering = ["-used_at"]
-        unique_together = ("user", "coupon", "order")
+
+        ordering = [
+            "-used_at",
+        ]
+
+        indexes = [
+            models.Index(fields=["coupon"]),
+            models.Index(fields=["consumer"]),
+            models.Index(fields=["order"]),
+            models.Index(fields=["used_at"]),
+        ]
 
     def __str__(self):
-        return f"{self.user} - {self.coupon.code}"
-"""
+        return f"{self.consumer} - {self.coupon.code}"
