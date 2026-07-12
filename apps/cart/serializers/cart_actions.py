@@ -59,8 +59,16 @@ class AddToCartSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         user = self.context["request"].user
+        consumer_profile = getattr(user, "consumer_profile", None)
 
-        cart, _ = Cart.objects.get_or_create(user=user)
+        cart, created = Cart.objects.get_or_create(
+            consumer_profile=consumer_profile,
+            defaults={"consumer_profile": consumer_profile},
+        )
+
+        if consumer_profile and cart.consumer_profile_id is None:
+            cart.consumer_profile = consumer_profile
+            cart.save(update_fields=["consumer_profile", "updated_at"])
 
         variant = self.validated_data["variant"]
         quantity = self.validated_data["quantity"]

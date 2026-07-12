@@ -4,20 +4,27 @@ from django.conf import settings
 from django.db import models
 
 from apps.products.models import ProductVariant
-from apps.profiles.models import VendorProfile
+from apps.profiles.models import ConsumerProfile
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+    # user = models.OneToOneField(
+    #     settings.AUTH_USER_MODEL,
+    #     on_delete=models.CASCADE,
+    #     related_name="cart"
+    # )
+    consumer_profile = models.OneToOneField(
+        ConsumerProfile,
         on_delete=models.CASCADE,
-        related_name="cart"
+        related_name="cart",
+        null=True,
+        blank=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "ph_cart"
+        db_table = "cart"
 
     def __str__(self):
         return f"Cart - {self.user.username}"
@@ -51,7 +58,7 @@ class CartItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "ph_cart_items"
+        db_table = "cart_items"
 
         constraints = [
             models.UniqueConstraint(

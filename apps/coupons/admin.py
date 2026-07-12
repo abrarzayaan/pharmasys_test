@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.coupons.models import Coupon
+from apps.coupons.models import Coupon, CouponUsage
 
 # Register your models here.
 @admin.register(Coupon)
@@ -9,3 +9,6 @@ class CouponAdmin(admin.ModelAdmin):
     list_filter = ('code', 'created_at', 'updated_at')
     search_fields = ('code',)
     ordering = ('-created_at',)
+
+
+admin.site.register(CouponUsage)

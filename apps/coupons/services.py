@@ -3,8 +3,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.coupons.choices import CouponStatus, DiscountType
-from apps.coupons.models import Coupon
-
+from apps.coupons.models import Coupon, CouponUsage
     
 class CouponService:
 
@@ -54,3 +53,22 @@ class CouponService:
         discount = min(discount, subtotal)
 
         return discount
+
+
+class CouponUsageService:
+
+    @staticmethod
+    def create_usage(order):
+        """
+        Store coupon redemption history.
+        """
+
+        if order.coupon is None:
+            return None
+
+        return CouponUsage.objects.create(
+            coupon=order.coupon,
+            consumer=order.customer,
+            order=order,
+            discount_amount=order.discount,
+        )

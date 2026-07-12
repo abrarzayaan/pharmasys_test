@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework.exceptions import ValidationError
 
-from apps.profiles.models import Address
+from apps.profiles.models import Address, ConsumerProfile
 from apps.cart.models import Cart
 from apps.coupons.services import CouponService
 from apps.products.models.inventories import Inventory
@@ -21,7 +21,9 @@ class CheckoutService:
             cart = Cart.objects.prefetch_related(
                 "items__product_variant",
                 "items__product_variant__product",
-            ).get(user=user)
+            ).get(
+            consumer_profile=user.consumer_profile
+        )
 
         except Cart.DoesNotExist:
             raise ValidationError(
@@ -44,7 +46,7 @@ class CheckoutService:
         try:
             address = Address.objects.get(
                 id=address_id,
-                user=user,
+                consumer=user.consumer_profile,
                 status="active",
             )
 
@@ -167,7 +169,65 @@ class CheckoutService:
             - discount
             + tax
             + delivery_charge
-        )            
+        )
+
+
+    @staticmethod
+    def calculate_checkout(user, address_id, coupon_code=None):
+        """
+        Returns validated checkout data for Order creation.
+        """
+
+        # Step-1
+        cart = CheckoutService.validate_cart(user)
+
+        # Step-2
+        address = CheckoutService.validate_address(
+            user=user,
+            address_id=address_id,
+        )
+
+        # Step-3
+        CheckoutService.validate_stock(cart)
+
+        # Step-4
+        subtotal = CheckoutService.calculate_subtotal(cart)
+
+        # Step-5
+        coupon, discount = CheckoutService.apply_coupon(
+            coupon_code=coupon_code,
+            subtotal=subtotal,
+        )
+
+        # Step-6
+        tax = CheckoutService.calculate_tax(
+            subtotal=subtotal,
+            discount=discount,
+        )
+
+        # Step-7
+        delivery_charge = CheckoutService.calculate_delivery_charge(
+            address=address,
+        )
+
+        # Step-8
+        grand_total = CheckoutService.calculate_grand_total(
+            subtotal=subtotal,
+            discount=discount,
+            tax=tax,
+            delivery_charge=delivery_charge,
+        )
+
+        return {
+            "cart": cart,
+            "address": address,
+            "coupon": coupon,
+            "subtotal": subtotal,
+            "discount": discount,
+            "tax": tax,
+            "delivery_charge": delivery_charge,
+            "grand_total": grand_total,
+        }            
     
     @staticmethod
     def generate_checkout(user, address_id, coupon_code=None):
@@ -175,45 +235,21 @@ class CheckoutService:
         Generate complete checkout summary.
         """
 
-        # Step-1: Validate Cart
-        cart = CheckoutService.validate_cart(user)
-
-        # Step-2: Validate Address
-        address = CheckoutService.validate_address(
+        checkout = CheckoutService.calculate_checkout(
             user=user,
             address_id=address_id,
-        )
-
-        # Step-3: Validate Inventory
-        CheckoutService.validate_stock(cart)
-
-        # Step-4: Calculate Subtotal
-        subtotal = CheckoutService.calculate_subtotal(cart)
-
-        # Step-5: Apply Coupon
-        coupon, discount = CheckoutService.apply_coupon(
             coupon_code=coupon_code,
-            subtotal=subtotal,
         )
 
-        # Step-6: Tax
-        tax = CheckoutService.calculate_tax(
-            subtotal=subtotal,
-            discount=discount,
-        )
+        cart = checkout["cart"]
+        address = checkout["address"]
+        coupon = checkout["coupon"]
 
-        # Step-7: Delivery Charge
-        delivery_charge = CheckoutService.calculate_delivery_charge(
-            address=address,
-        )
-
-        # Step-8: Grand Total
-        grand_total = CheckoutService.calculate_grand_total(
-            subtotal=subtotal,
-            discount=discount,
-            tax=tax,
-            delivery_charge=delivery_charge,
-        )
+        subtotal = checkout["subtotal"]
+        discount = checkout["discount"]
+        tax = checkout["tax"]
+        delivery_charge = checkout["delivery_charge"]
+        grand_total = checkout["grand_total"]
 
         # Step-9: Cart Items
         items = []

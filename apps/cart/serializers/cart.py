@@ -50,7 +50,8 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = [
             "id",
-            "user",
+            # "user",
+            "consumer_profile",
             "items",
             "total_items",
             "total_price",
