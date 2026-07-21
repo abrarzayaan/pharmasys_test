@@ -5,7 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
 from apps.orders.models import Order
-from apps.orders.serializers.order import OrderCreateSerializer, OrderDetailSerializer
+from apps.orders.serializers.order import (
+    DirectOrderCreateSerializer,
+    OrderCreateSerializer,
+    OrderDetailSerializer,
+)
 from apps.orders.services.order_service import OrderService
 from apps.orders.permissions import IsConsumerUser
 
@@ -48,6 +52,21 @@ class CustomerOrderViewSet(viewsets.ModelViewSet):
             response_serializer.data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=False, methods=["post"], url_path="buy-now")
+    @extend_schema(request=DirectOrderCreateSerializer, responses={201: OrderDetailSerializer})
+    def buy_now(self, request):
+        serializer = DirectOrderCreateSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        order = OrderService.create_direct_order(
+            consumer=request.user.consumer_profile,
+            validated_data=serializer.validated_data,
+        )
+        return Response(self.get_serializer(order).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["patch"])
     def cancel(self, request, pk=None):

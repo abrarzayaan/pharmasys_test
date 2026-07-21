@@ -184,3 +184,10 @@ class OrderCreateSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class DirectOrderCreateSerializer(OrderCreateSerializer):
+    """Create an order for one variant without using the shopping cart."""
+
+    product_variant_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1)

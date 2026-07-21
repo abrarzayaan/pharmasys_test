@@ -25,6 +25,15 @@ class CheckoutRequestSerializer(serializers.Serializer):
     )
 
 
+class DirectCheckoutRequestSerializer(CheckoutRequestSerializer):
+    """Checkout-preview input for a single product variant."""
+
+    quantity = serializers.IntegerField(
+        required=True,
+        min_value=1,
+    )
+
+
 class CheckoutItemSerializer(serializers.Serializer):
     """
     Individual Cart Item

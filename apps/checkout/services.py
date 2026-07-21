@@ -8,9 +8,53 @@ from apps.cart.models import Cart
 from apps.coupons.services import CouponService
 from apps.products.models.inventories import Inventory
 from apps.products.models.inventories import InventoryStatusChoices
+from apps.products.models import ProductVariant
 
 
 class CheckoutService:
+
+    @staticmethod
+    def validate_direct_item(variant_id, quantity):
+        """Validate one purchasable variant and return its checkout line."""
+        try:
+            variant = ProductVariant.objects.select_related("product").get(
+                id=variant_id,
+                status="active",
+                product__status="active",
+                product__approval_status="approved",
+            )
+        except ProductVariant.DoesNotExist:
+            raise ValidationError({"product_variant_id": "Product variant not found."})
+
+        if quantity < variant.min_order_qty:
+            raise ValidationError({
+                "quantity": f"Minimum order quantity is {variant.min_order_qty}."
+            })
+        if variant.max_order_qty is not None and quantity > variant.max_order_qty:
+            raise ValidationError({
+                "quantity": f"Maximum order quantity is {variant.max_order_qty}."
+            })
+
+        inventory = (
+            Inventory.objects.filter(
+                variant=variant,
+                status__in=[
+                    InventoryStatusChoices.IN_STOCK,
+                    InventoryStatusChoices.LOW_STOCK,
+                ],
+            ).order_by("-stock_qty").first()
+        )
+        if not inventory or inventory.available_stock < quantity:
+            available_stock = inventory.available_stock if inventory else 0
+            raise ValidationError({
+                "quantity": f"Only {available_stock} item(s) available."
+            })
+
+        return {
+            "variant": variant,
+            "quantity": quantity,
+            "unit_price": variant.sale_price if variant.sale_price is not None else variant.price,
+        }
 
     @staticmethod
     def validate_cart(user):
@@ -294,4 +338,55 @@ class CheckoutService:
             "pricing": pricing,
             "coupon": coupon_data,
             "address_id": address.id,
+        }
+
+    @staticmethod
+    def calculate_direct_checkout(user, variant_id, quantity, address_id, coupon_code=None):
+        """Calculate checkout data for Buy Now without creating a cart item."""
+        item = CheckoutService.validate_direct_item(variant_id, quantity)
+        address = CheckoutService.validate_address(user, address_id)
+        subtotal = item["unit_price"] * item["quantity"]
+        coupon, discount = CheckoutService.apply_coupon(coupon_code, subtotal)
+        tax = CheckoutService.calculate_tax(subtotal, discount)
+        delivery_charge = CheckoutService.calculate_delivery_charge(address)
+
+        return {
+            "items": [item],
+            "address": address,
+            "coupon": coupon,
+            "subtotal": subtotal,
+            "discount": discount,
+            "tax": tax,
+            "delivery_charge": delivery_charge,
+            "grand_total": CheckoutService.calculate_grand_total(
+                subtotal, discount, tax, delivery_charge
+            ),
+        }
+
+    @staticmethod
+    def generate_direct_checkout(user, variant_id, quantity, address_id, coupon_code=None):
+        """Generate the API checkout preview for a single Buy Now variant."""
+        checkout = CheckoutService.calculate_direct_checkout(
+            user, variant_id, quantity, address_id, coupon_code
+        )
+        item = checkout["items"][0]
+        variant = item["variant"]
+        discount = checkout["discount"]
+        coupon = checkout["coupon"]
+
+        return {
+            "items": [{
+                "product_variant_id": variant.id,
+                "product_name": variant.product.name,
+                "variant_name": variant.variant_name,
+                "quantity": item["quantity"],
+                "unit_price": item["unit_price"],
+                "total_price": item["unit_price"] * item["quantity"],
+            }],
+            "pricing": {
+                key: checkout[key]
+                for key in ("subtotal", "discount", "tax", "delivery_charge", "grand_total")
+            },
+            "coupon": {"code": coupon.code, "discount": discount} if coupon else None,
+            "address_id": checkout["address"].id,
         }

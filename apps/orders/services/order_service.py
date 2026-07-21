@@ -56,6 +56,32 @@ class OrderService:
         return order
 
     @classmethod
+    @transaction.atomic
+    def create_direct_order(cls, consumer, validated_data):
+        """Create a Buy Now order while leaving the consumer's cart unchanged."""
+        checkout = CheckoutService.calculate_direct_checkout(
+            user=consumer.user,
+            variant_id=validated_data["product_variant_id"],
+            quantity=validated_data["quantity"],
+            address_id=validated_data["address"].id,
+            coupon_code=validated_data.get("coupon_code"),
+        )
+        order = cls._create_order(
+            consumer=consumer,
+            address=checkout["address"],
+            coupon=checkout["coupon"],
+            subtotal=checkout["subtotal"],
+            discount=checkout["discount"],
+            tax=checkout["tax"],
+            delivery_charge=checkout["delivery_charge"],
+            grand_total=checkout["grand_total"],
+            payment_method=validated_data["payment_method"],
+        )
+        cls._create_direct_order_items(order, checkout["items"])
+        PaymentService.create_payment(order)
+        return order
+
+    @classmethod
     def _create_order(
         cls,
         *,
@@ -108,6 +134,29 @@ class OrderService:
                 )
             )
 
+        OrderItem.objects.bulk_create(order_items)
+
+    @classmethod
+    def _create_direct_order_items(cls, order, checkout_items):
+        order_items = []
+        for item in checkout_items:
+            variant = item["variant"]
+            quantity = item["quantity"]
+            unit_price = item["unit_price"]
+            order_items.append(OrderItem(
+                order=order,
+                product_variant=variant,
+                quantity=quantity,
+                unit_price=unit_price,
+                total_price=quantity * unit_price,
+                product_snapshot={
+                    "product_id": variant.product.id,
+                    "variant_id": variant.id,
+                    "name": variant.product.name,
+                    "sku": variant.sku,
+                    "price": str(variant.price),
+                },
+            ))
         OrderItem.objects.bulk_create(order_items)
 
     @classmethod

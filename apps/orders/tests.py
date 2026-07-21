@@ -181,6 +181,33 @@ class OrderModuleTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["order_number"], Order.objects.get(id=order_id).order_number)
 
+    def test_customer_can_buy_now_without_changing_cart(self):
+        self.client.force_authenticate(self.consumer_user)
+        url = reverse("customer-orders-buy-now")
+        response = self.client.post(url, {
+            "product_variant_id": self.variant.id,
+            "quantity": 1,
+            "address_id": self.address.id,
+            "payment_method": "COD",
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["items"][0]["product_variant"], self.variant.id)
+        self.assertEqual(response.data["items"][0]["quantity"], 1)
+        self.assertTrue(CartItem.objects.filter(pk=self.cart_item.pk).exists())
+
+    def test_customer_can_preview_direct_variant_checkout(self):
+        self.client.force_authenticate(self.consumer_user)
+        url = reverse("direct-checkout", kwargs={"variant_id": self.variant.id})
+        response = self.client.post(url, {
+            "quantity": 1,
+            "address_id": self.address.id,
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["items"][0]["product_variant_id"], self.variant.id)
+        self.assertEqual(response.data["items"][0]["quantity"], 1)
+
     def test_customer_order_cancellation(self):
         self.client.force_authenticate(self.consumer_user)
         
