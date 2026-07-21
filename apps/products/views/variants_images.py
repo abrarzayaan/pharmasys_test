@@ -19,9 +19,11 @@ class ProductVariantViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_authenticated and user.is_staff:
             return ProductVariant.objects.all()
-        elif user.is_authenticated:
-            # ভেন্ডররা শুধু নিজের প্রোডাক্টের ভ্যারিয়েন্ট দেখবে
-            return ProductVariant.objects.filter(product__vendor=user)
+        elif user.is_authenticated and hasattr(user, 'vendor_profile'):
+            # Product.vendor points to VendorProfile, not directly to User.
+            # Follow the profile's user relation so vendor requests do not try
+            # to compare a VendorProfile field with a User instance.
+            return ProductVariant.objects.filter(product__vendor__user=user)
         return ProductVariant.objects.filter(status='active', product__status='active', product__approval_status='approved')
 
     def get_permissions(self):

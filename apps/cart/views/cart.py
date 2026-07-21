@@ -77,12 +77,13 @@ class CartItemView(GenericAPIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get_cart_item(self, pk):
+    def get_cart_item(self, variant_id):
+        """Return this consumer's cart item for the supplied variant ID."""
 
         consumer_profile = getattr(self.request.user, 'consumer_profile', None)
 
         return CartItem.objects.filter(
-            id=pk,
+            product_variant_id=variant_id,
             cart__consumer_profile=consumer_profile,
         ).first()
 
@@ -91,9 +92,9 @@ class CartItemView(GenericAPIView):
         request=UpdateCartItemSerializer,
         responses={200: CartSerializer},
     )
-    def patch(self, request, pk):
+    def patch(self, request, variant_id):
 
-        cart_item = self.get_cart_item(pk)
+        cart_item = self.get_cart_item(variant_id)
 
         if not cart_item:
             return Response(
@@ -123,9 +124,9 @@ class CartItemView(GenericAPIView):
         tags=["Cart"],
         responses={200: CartSerializer},
     )
-    def delete(self, request, pk):
+    def delete(self, request, variant_id):
 
-        cart_item = self.get_cart_item(pk)
+        cart_item = self.get_cart_item(variant_id)
 
         if not cart_item:
             return Response(
@@ -174,16 +175,11 @@ class ClearCartView(GenericAPIView):
     def delete(self, request):
 
         consumer_profile = getattr(request.user, 'consumer_profile', None)
-        cart, created = Cart.objects.get_or_create(
-            consumer_profile=consumer_profile,
-            defaults={'consumer_profile': consumer_profile},
-        )
-
-        if consumer_profile and cart.consumer_profile_id is None:
-            cart.consumer_profile = consumer_profile
-            cart.save(update_fields=['consumer_profile', 'updated_at'])
-
-        cart.items.all().delete()
+        cart = Cart.objects.filter(consumer_profile=consumer_profile).first()
+        if cart:
+            # Deleting the cart cascades to its items, giving the user a true
+            # full-cart delete rather than merely deleting its rows manually.
+            cart.delete()
 
         return Response(
             {

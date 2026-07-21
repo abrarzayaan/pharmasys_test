@@ -21,7 +21,7 @@ urlpatterns = [
     ),
 
     path(
-        "items/<int:pk>/",
+        "items/<int:variant_id>/",
         CartItemView.as_view(),
         name="cart-item",
     ),

@@ -112,3 +112,13 @@ class SubCategoryVariantListTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['results'][0]['id'], self.variant.id)
+
+    def test_vendor_can_retrieve_own_variant(self):
+        """A variant detail lookup must filter through VendorProfile.user."""
+        self.client.force_authenticate(self.user)
+        url = reverse('variant-detail', kwargs={'pk': self.variant.id})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.variant.id)

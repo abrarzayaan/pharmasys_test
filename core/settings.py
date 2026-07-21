@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-swis&3gg_6c6!sc%!)pw8g&kwxu34_sd=b-&zre^@mup_7%4bz
 import os
 import dj_database_url # Import korun upore
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
