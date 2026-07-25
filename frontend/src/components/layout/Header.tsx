@@ -118,11 +118,12 @@ export default function Header() {
             className="bg-transparent text-content-secondary text-xs font-medium px-4 py-2 border-r border-bg-border focus:outline-none cursor-pointer max-w-[130px] truncate"
           >
             <option value="" className="bg-bg-card text-content-primary">All Categories</option>
-            {categories.map((c) => (
+            {categories.map((c: any) => (
               <option key={c.id} value={c.id} className="bg-bg-card text-content-primary">
                 {c.name}
               </option>
             ))}
+
           </select>
 
           <input
@@ -264,7 +265,7 @@ export default function Header() {
               <div className="absolute left-0 mt-1 flex z-50">
                 {/* Main Categories Panel */}
                 <div className="w-64 bg-bg-card border border-bg-border rounded-2xl shadow-card p-2 space-y-1">
-                  {categories.map((cat) => {
+                  {categories.map((cat: any) => {
                     const hasChildren = cat.children && cat.children.length > 0;
                     const isHovered = activeHoverCat === cat.id;
                     return (
@@ -294,7 +295,7 @@ export default function Header() {
                 {activeHoverCat && (
                   <div className="w-60 bg-bg-card border border-bg-border rounded-2xl shadow-card p-2 space-y-1 ml-1 self-start max-h-80 overflow-y-auto custom-scrollbar">
                     {categories
-                      .find((c) => c.id === activeHoverCat)
+                      .find((c: any) => c.id === activeHoverCat)
                       ?.children?.map((sub: any) => (
                         <Link
                           key={sub.id}

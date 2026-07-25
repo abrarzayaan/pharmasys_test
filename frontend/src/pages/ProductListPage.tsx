@@ -156,7 +156,8 @@ export default function ProductListPage() {
     rxOnlyFilter;
 
   // Active Category Name
-  const activeCategoryName = categories.find((c) => c.id === expandedCatId)?.name;
+  const activeCategoryName = categories.find((c: any) => c.id === expandedCatId)?.name;
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 py-6 pb-16">
@@ -203,7 +204,7 @@ export default function ProductListPage() {
               </div>
             ) : (
               <div className="space-y-1 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
-                {categories.map((cat) => {
+                {categories.map((cat: any) => {
                   const isExpanded = expandedCatId === cat.id;
                   const hasSub = cat.children && cat.children.length > 0;
                   return (
@@ -265,7 +266,7 @@ export default function ProductListPage() {
                 Brands
               </h4>
               <div className="space-y-1 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                {brands.map((b) => {
+                {brands.map((b: any) => {
                   const isSelected = selectedBrandId === b.id;
                   return (
                     <button
@@ -363,7 +364,7 @@ export default function ProductListPage() {
                 </Badge>
               )}
               {selectedSubcategoryId && (
-                <Badge variant="info" className="gap-1 text-[11px] rounded-full">
+                <Badge variant="primary" className="gap-1 text-[11px] rounded-full">
                   Subcat #{selectedSubcategoryId}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedSubcategoryId(null)} />
                 </Badge>

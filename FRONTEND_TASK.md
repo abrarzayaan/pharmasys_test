@@ -683,9 +683,9 @@ DELETE /api/profiles/addresses/{id}/
 | Section | Status | Notes |
 |---|---|---|
 | Section 01 — Setup & Foundation | ✅ DONE | Vite + React TS, all APIs, stores, router, layout, UI components |
-| Section 02 — Authentication | ✅ DONE | Login + Register with Zod, JWT, split-screen UI |
-| Section 03 — Home & Product List | ✅ DONE | Home page, category tree, brand grid, variant cards, shop filters |
-| Section 04 — Product Detail | ⬜ TODO | |
+| Section 02 — Authentication | ✅ DONE | Login (phone/username) + Register with Zod, JWT tokens, split-screen UI |
+| Section 03 — Home & Product Catalog | ✅ DONE | Responsive home page & catalog, flyout hover category tree, guest browsing |
+| Section 04 — Product Detail | ⬜ TODO | Product variant details, pricing, stock, prescription upload, quantity selector |
 | Section 05 — Cart | ⬜ TODO | |
 | Section 06 — Wishlist | ⬜ TODO | |
 | Section 07 — Checkout & Payment | ⬜ TODO | |
@@ -695,6 +695,7 @@ DELETE /api/profiles/addresses/{id}/
 
 ---
 
-> **Current:** Section 03 ✅ DONE — Home page & Product Catalog live with categories, brands, variants showcase, search, and filters.
+> **Current:** Section 03 & Authentication Fixes ✅ COMPLETED.
 >
-> **Next Step:** Tell me **"start section 04"** to build the Product Variant Detail Page with full pricing, stock status, prescription notice, quantity selector, and related items.
+> **Next Step:** Tell me **"start section 04"** to build the **Product Variant Detail Page** (`/variants/:id`).
+

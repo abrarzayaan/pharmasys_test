@@ -62,7 +62,7 @@ export default function HomePage() {
 
   // Filtered variants for tab selection
   const popularVariants = activeTabId
-    ? variants.filter((v) => v.category_id === activeTabId)
+    ? variants.filter((v: any) => v.category_id === activeTabId)
     : variants;
 
   const topCategoryIcons = [
@@ -172,7 +172,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.slice(0, 6).map((cat, idx) => {
+            {categories.slice(0, 6).map((cat: any, idx: number) => {
               const IconComp = topCategoryIcons[idx % topCategoryIcons.length].icon;
               return (
                 <div
@@ -207,7 +207,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {variants.slice(0, 6).map((v) => (
+            {variants.slice(0, 6).map((v: any) => (
               <VariantCard key={v.id} variant={v} showTimer />
             ))}
           </div>
@@ -277,7 +277,7 @@ export default function HomePage() {
           >
             All Products
           </button>
-          {categories.slice(0, 4).map((cat) => (
+          {categories.slice(0, 4).map((cat: any) => (
             <button
               key={cat.id}
               type="button"
@@ -295,10 +295,11 @@ export default function HomePage() {
 
         {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {popularVariants.slice(0, 6).map((v) => (
+          {popularVariants.slice(0, 6).map((v: any) => (
             <VariantCard key={v.id} variant={v} />
           ))}
         </div>
+
 
         {/* 2-COLUMN PROMO BANNER STRIP (SCREENSHOT 03) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
@@ -340,10 +341,11 @@ export default function HomePage() {
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {variants.slice(0, 6).map((v) => (
+          {variants.slice(0, 6).map((v: any) => (
             <VariantCard key={v.id} variant={v} />
           ))}
         </div>
+
 
         {/* Customer Testimonials */}
         <div className="pt-8 space-y-6 border-t border-bg-border/60">
@@ -410,7 +412,7 @@ export default function HomePage() {
         {/* Brand Logos Banner */}
         {brands.length > 0 && (
           <div className="rounded-2xl bg-primary-900/40 border border-primary-800/40 py-4 px-6 flex items-center justify-around flex-wrap gap-4">
-            {brands.map((b) => (
+            {brands.map((b: any) => (
               <span key={b.id} className="font-head font-extrabold text-sm text-primary-300 uppercase tracking-widest">
                 {b.name}
               </span>

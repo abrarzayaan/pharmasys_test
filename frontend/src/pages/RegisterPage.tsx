@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,8 +7,10 @@ import { motion } from 'framer-motion';
 import { User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authApi } from '@/api/auth.api';
+import { useAuthStore } from '@/store/auth.store';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+
 
 // ── Zod schema ────────────────────────────────────────────────────
 const registerSchema = z
@@ -53,8 +55,15 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const navigate  = useNavigate();
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [showPass,    setShowPass]    = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   const {
     register,
@@ -77,8 +86,9 @@ export default function RegisterPage() {
       });
 
       toast.success('Account created! Please sign in. 🎉');
-      navigate('/login');
+      navigate('/login', { state: { phone: data.phone } });
     } catch (err: any) {
+
       // Backend returns field-level errors as an object
       const errData = err?.response?.data;
       if (errData && typeof errData === 'object') {

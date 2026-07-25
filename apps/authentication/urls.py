@@ -1,5 +1,6 @@
+# pyrefly: ignore [missing-import]
 from django.urls import path
-from apps.authentication.views import RegisterView, LoginView, CustomTokenView
+from .views import RegisterView, LoginView, CustomTokenView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),

@@ -15,7 +15,10 @@ export interface RegisterPayload {
 }
 
 export const authApi = {
-  login:    (data: LoginPayload)    => api.post<{ access: string; refresh: string }>('/auth/login/', data),
-  register: (data: RegisterPayload) => api.post<{ message: string }>('/auth/register/', data),
-  refresh:  (refresh: string)       => api.post<{ access: string }>('/auth/token/', { refresh }),
+  login: (data: LoginPayload) =>
+    api.post<{ access: string; refresh: string; user?: any }>('/auth/login/', data),
+  register: (data: RegisterPayload) =>
+    api.post<{ message: string }>('/auth/register/', data),
+  refresh: (refresh: string) =>
+    api.post<{ access: string }>('/auth/token/', { refresh }),
 };

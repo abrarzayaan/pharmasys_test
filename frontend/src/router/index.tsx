@@ -3,7 +3,7 @@ import Layout from '@/components/layout/Layout';
 import ProtectedRoute from './ProtectedRoute';
 
 // ── Pages (lazy imports) ─────────────────────────────────────────
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import PageLoader from '@/components/ui/PageLoader';
 
 const HomePage             = lazy(() => import('@/pages/HomePage'));
@@ -22,7 +22,8 @@ const LoginPage            = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage         = lazy(() => import('@/pages/RegisterPage'));
 const NotFoundPage         = lazy(() => import('@/pages/NotFoundPage'));
 
-const wrap = (el: JSX.Element) => (
+
+const wrap = (el: React.ReactNode) => (
   <Suspense fallback={<PageLoader />}>{el}</Suspense>
 );
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,12 +13,12 @@ import Input from '@/components/ui/Input';
 
 // ── Zod schema ────────────────────────────────────────────────────
 const loginSchema = z.object({
-  phone:    z.string().min(10, 'Enter a valid phone number'),
+  phone: z.string().min(3, 'Enter a valid phone number or username'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 type LoginForm = z.infer<typeof loginSchema>;
 
-// ── Decorative pills for brand side ──────────────────────────────
+// ── Decorative features for brand side ──────────────────────────────
 const features = [
   '✅ 1000+ Medicines in Stock',
   '🚀 Fast Doorstep Delivery',
@@ -27,26 +27,42 @@ const features = [
 ];
 
 export default function LoginPage() {
-  const navigate   = useNavigate();
-  const setAuth    = useAuthStore((s) => s.setAuth);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [showPass, setShowPass] = useState(false);
+
+  const prefillPhone = location.state?.phone || '';
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      phone: prefillPhone,
+      password: '',
+    },
+  });
 
   const onSubmit = async (data: LoginForm) => {
     try {
       const res = await authApi.login(data);
-      const { access, refresh } = res.data;
+      const { access, refresh, user } = res.data;
 
-      // Store tokens; user object carries the phone for display
-      setAuth(access, refresh, { phone: data.phone });
+      // Store tokens; user object carries phone/username for header display
+      setAuth(access, refresh, user || { phone: data.phone });
 
       toast.success('Welcome back! 👋');
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ||
@@ -56,9 +72,9 @@ export default function LoginPage() {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-bg-base flex">
-
       {/* ── Left: Brand panel ── */}
       <motion.div
         initial={{ opacity: 0, x: -40 }}
@@ -66,7 +82,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden"
       >
-        {/* Background gradient blob */}
+        {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/60 via-bg-base to-bg-base" />
         <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary-600/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
@@ -136,7 +152,7 @@ export default function LoginPage() {
           <div className="space-y-1">
             <h2 className="font-head font-bold text-3xl text-content-primary">Welcome back</h2>
             <p className="text-content-secondary text-sm">
-              Sign in with your registered phone number
+              Sign in with your phone number or username
             </p>
           </div>
 
@@ -149,9 +165,9 @@ export default function LoginPage() {
           >
             <Input
               id="login-phone"
-              label="Phone Number"
-              type="tel"
-              placeholder="01XXXXXXXXX"
+              label="Phone Number or Username"
+              type="text"
+              placeholder="01XXXXXXXXX or admin"
               icon={<Phone className="h-4 w-4" />}
               error={errors.phone?.message}
               {...register('phone')}

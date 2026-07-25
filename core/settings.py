@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-swis&3gg_6c6!sc%!)pw8g&kwxu34_sd=b-&zre^@mup_7%4bz'
 
 import os
+# pyrefly: ignore [missing-import]
 import dj_database_url # Import korun upore
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -175,9 +176,20 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ── CORS Configuration ────────────────────────────────────────────
-# Allow the Vite dev server to call the Django API
+# Allow any Vite dev server / frontend port to call the Django API
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5175',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 CORS_ALLOW_CREDENTIALS = True
+
