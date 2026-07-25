@@ -1,12 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import {
   Search,
   Filter,
   X,
-  ChevronDown,
   ChevronRight,
   SlidersHorizontal,
   Pill,
@@ -41,8 +39,22 @@ export default function ProductListPage() {
     currentCategory ? parseInt(currentCategory) : null
   );
 
-  // Fetch Categories
-  const { data: categoriesData, isLoading: catLoading } = useQuery({
+  // Sync state with URL search params
+  useEffect(() => {
+    setSearchInput(searchParams.get('search') || '');
+    if (searchParams.get('subcategory')) {
+      setSelectedSubcategoryId(parseInt(searchParams.get('subcategory')!));
+    }
+    if (searchParams.get('category')) {
+      setExpandedCatId(parseInt(searchParams.get('category')!));
+    }
+    if (searchParams.get('brand')) {
+      setSelectedBrandId(parseInt(searchParams.get('brand')!));
+    }
+  }, [searchParams]);
+
+  // Cached Fetch Categories
+  const { data: categories = [], isLoading: catLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const res = await productsApi.getCategories();
@@ -50,10 +62,11 @@ export default function ProductListPage() {
       if (Array.isArray(raw)) return raw;
       return (raw as any).results || [];
     },
+    staleTime: 1000 * 60 * 10,
   });
 
-  // Fetch Brands
-  const { data: brandsData } = useQuery({
+  // Cached Fetch Brands
+  const { data: brands = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const res = await productsApi.getBrands();
@@ -61,10 +74,11 @@ export default function ProductListPage() {
       if (Array.isArray(raw)) return raw;
       return (raw as any).results || [];
     },
+    staleTime: 1000 * 60 * 10,
   });
 
-  // Fetch Variants
-  const { data: variantsData, isLoading: variantsLoading } = useQuery({
+  // Cached Fetch Product Variants
+  const { data: rawVariants = [], isLoading: variantsLoading } = useQuery({
     queryKey: ['variants-list', selectedSubcategoryId],
     queryFn: async () => {
       if (selectedSubcategoryId) {
@@ -79,15 +93,17 @@ export default function ProductListPage() {
         return (raw as any).results || [];
       }
     },
+    staleTime: 1000 * 60 * 5,
   });
 
-  const categories: Category[] = categoriesData || [];
-  const brands: Brand[] = brandsData || [];
-  const rawVariants: ProductVariantItem[] = variantsData || [];
-
-  // Filter & Sort logic on client side for responsive instant response
+  // Filter & Sort logic
   const filteredVariants = useMemo(() => {
     let result = [...rawVariants];
+
+    // Category Filter (if expanded category set and no specific subcategory selected)
+    if (expandedCatId && !selectedSubcategoryId) {
+      result = result.filter((item) => item.category_id === expandedCatId);
+    }
 
     // Search query filter
     if (searchInput.trim()) {
@@ -121,12 +137,13 @@ export default function ProductListPage() {
     });
 
     return result;
-  }, [rawVariants, searchInput, selectedBrandId, rxOnlyFilter, sortBy]);
+  }, [rawVariants, searchInput, selectedBrandId, expandedCatId, selectedSubcategoryId, rxOnlyFilter, sortBy]);
 
   const clearFilters = () => {
     setSearchInput('');
     setSelectedSubcategoryId(null);
     setSelectedBrandId(null);
+    setExpandedCatId(null);
     setRxOnlyFilter(false);
     setSearchParams({});
   };
@@ -134,27 +151,31 @@ export default function ProductListPage() {
   const hasActiveFilters =
     Boolean(searchInput) ||
     selectedSubcategoryId !== null ||
+    expandedCatId !== null ||
     selectedBrandId !== null ||
     rxOnlyFilter;
 
+  // Active Category Name
+  const activeCategoryName = categories.find((c) => c.id === expandedCatId)?.name;
+
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header Banner */}
-      <div className="space-y-2">
-        <h1 className="font-head font-extrabold text-3xl sm:text-4xl text-content-primary">
-          Pharmacy Product Catalog
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 py-6 pb-16">
+      {/* ── CLEAN BANNER HEADER ── */}
+      <div className="bg-bg-card border border-bg-border rounded-3xl p-6 sm:p-8 space-y-2 shadow-card">
+        <h1 className="font-head font-extrabold text-2xl sm:text-3xl text-content-primary">
+          {activeCategoryName ? `${activeCategoryName} Catalog` : 'Pharmacy Product Catalog'}
         </h1>
-        <p className="text-content-secondary text-sm">
-          Browse all authentic medicines, healthcare items, and pharmaceutical variants.
+        <p className="text-content-secondary text-xs sm:text-sm">
+          Browse authentic medicines, health supplements, and verified pharmaceutical SKUs.
         </p>
       </div>
 
-      {/* Main Grid Layout: Filter Sidebar + Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* ── MAIN LAYOUT: SIDEBAR + PRODUCT GRID ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ── DESKTOP FILTER SIDEBAR ── */}
-        <aside className="hidden lg:block lg:col-span-3 space-y-6 bg-bg-card border border-bg-border rounded-2xl p-6 shadow-card sticky top-24">
-          <div className="flex items-center justify-between pb-4 border-b border-bg-border">
-            <h3 className="font-head font-bold text-lg text-content-primary flex items-center gap-2">
+        <aside className="hidden lg:block lg:col-span-3 space-y-6 bg-bg-card border border-bg-border rounded-3xl p-5 shadow-card sticky top-24">
+          <div className="flex items-center justify-between pb-3 border-b border-bg-border">
+            <h3 className="font-head font-bold text-sm text-content-primary flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-primary-400" />
               Filters
             </h3>
@@ -162,27 +183,26 @@ export default function ProductListPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-xs text-primary-400 hover:underline"
+                className="text-[11px] font-bold text-primary-400 hover:underline"
               >
                 Reset All
               </button>
             )}
           </div>
 
-          {/* Categories Accordion */}
+          {/* Categories & Subcategories Accordion with Arrows */}
           <div className="space-y-3">
-            <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
-              Categories & Subcategories
+            <h4 className="font-head font-semibold text-[11px] text-content-muted uppercase tracking-wider">
+              Categories
             </h4>
 
             {catLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-8 rounded-xl" />
                 <Skeleton className="h-8 rounded-xl" />
-                <Skeleton className="h-8 rounded-xl" />
               </div>
             ) : (
-              <div className="space-y-1 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
                 {categories.map((cat) => {
                   const isExpanded = expandedCatId === cat.id;
                   const hasSub = cat.children && cat.children.length > 0;
@@ -190,33 +210,38 @@ export default function ProductListPage() {
                     <div key={cat.id} className="space-y-1">
                       <button
                         type="button"
-                        onClick={() => setExpandedCatId(isExpanded ? null : cat.id)}
-                        className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-medium text-content-secondary hover:bg-bg-surface hover:text-content-primary transition-colors text-left"
+                        onClick={() => {
+                          setExpandedCatId(isExpanded ? null : cat.id);
+                          setSelectedSubcategoryId(null);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-colors text-left ${
+                          isExpanded
+                            ? 'bg-primary-600/20 text-primary-400'
+                            : 'text-content-secondary hover:bg-bg-surface hover:text-content-primary'
+                        }`}
                       >
-                        <span className="line-clamp-1">{cat.name}</span>
+                        <span className="truncate">{cat.name}</span>
                         {hasSub && (
                           <ChevronRight
-                            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90 text-primary-400' : ''}`}
+                            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90 text-primary-400' : 'text-content-muted'}`}
                           />
                         )}
                       </button>
 
-                      {/* Subcategories list */}
+                      {/* Subcategories */}
                       {isExpanded && hasSub && (
-                        <div className="pl-4 space-y-1 border-l border-bg-border/60 ml-2 py-1">
+                        <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
                           {cat.children.map((sub: any) => {
                             const isSelected = selectedSubcategoryId === sub.id;
                             return (
                               <button
                                 key={sub.id}
                                 type="button"
-                                onClick={() => {
-                                  setSelectedSubcategoryId(isSelected ? null : sub.id);
-                                }}
-                                className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                                onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center justify-between ${
                                   isSelected
-                                    ? 'bg-primary-600/20 text-primary-400 font-semibold'
-                                    : 'text-content-muted hover:text-content-secondary'
+                                    ? 'bg-primary-600/30 text-primary-300 font-bold'
+                                    : 'text-content-muted hover:text-content-secondary hover:bg-bg-surface'
                                 }`}
                               >
                                 <span>{sub.name}</span>
@@ -236,10 +261,10 @@ export default function ProductListPage() {
           {/* Brands Filter */}
           {brands.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-bg-border">
-              <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
-                Brand
+              <h4 className="font-head font-semibold text-[11px] text-content-muted uppercase tracking-wider">
+                Brands
               </h4>
-              <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                 {brands.map((b) => {
                   const isSelected = selectedBrandId === b.id;
                   return (
@@ -249,7 +274,7 @@ export default function ProductListPage() {
                       onClick={() => setSelectedBrandId(isSelected ? null : b.id)}
                       className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
                         isSelected
-                          ? 'bg-primary-600/20 text-primary-400 font-semibold'
+                          ? 'bg-primary-600/20 text-primary-400 font-bold'
                           : 'text-content-secondary hover:bg-bg-surface hover:text-content-primary'
                       }`}
                     >
@@ -262,11 +287,11 @@ export default function ProductListPage() {
             </div>
           )}
 
-          {/* Rx Filter Switch */}
+          {/* Rx Toggle */}
           <div className="pt-4 border-t border-bg-border">
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-xs font-semibold text-content-secondary">
-                Prescription Required Only
+                Prescription Only (Rx)
               </span>
               <input
                 type="checkbox"
@@ -278,40 +303,40 @@ export default function ProductListPage() {
           </div>
         </aside>
 
-        {/* ── MAIN PRODUCTS AREA ── */}
-        <main className="lg:col-span-9 space-y-6">
+        {/* ── PRODUCTS AREA ── */}
+        <main className="lg:col-span-9 space-y-5">
           {/* Top Controls Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-bg-card border border-bg-border rounded-2xl p-4 shadow-card">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-bg-card border border-bg-border rounded-2xl p-3 sm:px-4 shadow-card">
             {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-muted" />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs focus:outline-none focus:border-primary-500"
+                className="w-full pl-8 pr-3 py-1.5 rounded-full bg-bg-surface border border-bg-border text-content-primary text-xs focus:outline-none focus:border-primary-500"
               />
             </div>
 
             <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-              {/* Mobile Filter Button */}
+              {/* Mobile Filter Toggle */}
               <Button
                 variant="outline"
                 size="sm"
-                className="lg:hidden rounded-xl gap-2 text-xs"
+                className="lg:hidden rounded-full gap-1.5 text-xs py-1"
                 onClick={() => setMobileFilterOpen(true)}
               >
                 <Filter className="w-3.5 h-3.5" /> Filters
               </Button>
 
-              {/* Sort Dropdown */}
-              <div className="flex items-center gap-2 text-xs text-content-secondary">
+              {/* Sort Select */}
+              <div className="flex items-center gap-2 text-xs text-content-secondary font-medium">
                 <span>Sort by:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-bg-surface border border-bg-border rounded-xl px-3 py-2 text-xs text-content-primary focus:outline-none focus:border-primary-500"
+                  className="bg-bg-surface border border-bg-border rounded-full px-3 py-1.5 text-xs text-content-primary focus:outline-none focus:border-primary-500"
                 >
                   <option value="price_asc">Price: Low to High</option>
                   <option value="price_desc">Price: High to Low</option>
@@ -321,30 +346,30 @@ export default function ProductListPage() {
             </div>
           </div>
 
-          {/* Active Filter Badges Strip */}
+          {/* Active Filter Pills Strip */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-content-muted">Active Filters:</span>
+              <span className="text-[11px] text-content-muted">Active:</span>
               {searchInput && (
-                <Badge variant="primary" className="gap-1 text-xs">
-                  Query: "{searchInput}"
+                <Badge variant="primary" className="gap-1 text-[11px] rounded-full">
+                  "{searchInput}"
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchInput('')} />
                 </Badge>
               )}
+              {expandedCatId && (
+                <Badge variant="accent" className="gap-1 text-[11px] rounded-full">
+                  Cat: {activeCategoryName}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setExpandedCatId(null)} />
+                </Badge>
+              )}
               {selectedSubcategoryId && (
-                <Badge variant="accent" className="gap-1 text-xs">
-                  Subcategory ID: {selectedSubcategoryId}
+                <Badge variant="info" className="gap-1 text-[11px] rounded-full">
+                  Subcat #{selectedSubcategoryId}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedSubcategoryId(null)} />
                 </Badge>
               )}
-              {selectedBrandId && (
-                <Badge variant="info" className="gap-1 text-xs">
-                  Brand ID: {selectedBrandId}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedBrandId(null)} />
-                </Badge>
-              )}
               {rxOnlyFilter && (
-                <Badge variant="danger" className="gap-1 text-xs">
+                <Badge variant="danger" className="gap-1 text-[11px] rounded-full">
                   Rx Required
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setRxOnlyFilter(false)} />
                 </Badge>
@@ -352,28 +377,28 @@ export default function ProductListPage() {
             </div>
           )}
 
-          {/* Products Grid */}
+          {/* Responsive Cards Grid (Compact 2-col to 4-col matching Homepage) */}
           {variantsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <Skeleton key={i} className="h-80 rounded-2xl" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-64 rounded-2xl" />
               ))}
             </div>
           ) : filteredVariants.length === 0 ? (
-            <div className="text-center py-20 bg-bg-card border border-bg-border rounded-2xl space-y-3">
-              <Pill className="w-12 h-12 text-content-muted mx-auto" />
-              <h3 className="font-head font-bold text-xl text-content-primary">No Matching Variants Found</h3>
-              <p className="text-content-muted text-sm max-w-md mx-auto">
-                Try adjusting your search criteria or resetting active category & brand filters.
+            <div className="text-center py-16 bg-bg-card border border-bg-border rounded-3xl space-y-3">
+              <Pill className="w-10 h-10 text-content-muted mx-auto" />
+              <h3 className="font-head font-bold text-lg text-content-primary">No Product Variants Found</h3>
+              <p className="text-content-muted text-xs max-w-sm mx-auto">
+                Try adjusting your search query or clear selected category filters.
               </p>
               {hasActiveFilters && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2 rounded-xl">
+                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2 rounded-full text-xs">
                   Reset All Filters
                 </Button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filteredVariants.map((variant) => (
                 <VariantCard key={variant.id} variant={variant} />
               ))}
