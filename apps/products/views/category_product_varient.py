@@ -1,5 +1,5 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, permissions
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from apps.products.models import Category, ProductVariant
 from apps.products.serializers.category_product_varient import (
@@ -20,7 +20,7 @@ class SubCategoryListAPIView(generics.ListAPIView):
     """
 
     serializer_class = SubCategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
@@ -41,7 +41,7 @@ class ProductVariantListAPIView(generics.ListAPIView):
     """
 
     serializer_class = ProductVariantListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
