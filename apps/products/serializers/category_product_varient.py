@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
 
 from apps.products.models import Category, ProductVariant
@@ -26,7 +27,7 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
     brand_id = serializers.SerializerMethodField()
     brand_name = serializers.SerializerMethodField()
 
-    thumbnail = serializers.ImageField(source="product.thumbnail", read_only=True)
+    thumbnail = serializers.SerializerMethodField()
 
     is_prescription_required = serializers.BooleanField(
         source="product.is_prescription_required",
@@ -51,6 +52,26 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
             "brand_name",
             "is_prescription_required",
         )
+
+    def get_thumbnail(self, obj):
+        active_images = obj.images.filter(status='active')
+        primary_image = active_images.filter(is_primary=True).first()
+        if not primary_image:
+            primary_image = active_images.first()
+        
+        if primary_image and primary_image.image_url:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(primary_image.image_url.url)
+            return primary_image.image_url.url
+        
+        if obj.product and obj.product.thumbnail:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.product.thumbnail.url)
+            return obj.product.thumbnail.url
+            
+        return None
 
     def get_brand_id(self, obj):
         if obj.product.brand:

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.contrib import admin
 from apps.products.models import (
     Category, Brand, Product, ProductVariant, 
@@ -33,17 +34,18 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['product_type', 'status', 'approval_status', 'is_prescription_required']
     search_fields = ['name', 'sku', 'barcode']
     prepopulated_fields = {'slug': ('name',)}
-    inlines = [ProductVariantInline, ProductImageInline]  # ইনলাইন যুক্ত করা হলো
+    inlines = [ProductVariantInline]
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
     list_display = ['id', 'product', 'variant_name', 'sku', 'price', 'status']
     list_filter = ['status']
     search_fields = ['variant_name', 'sku', 'barcode']
+    inlines = [ProductImageInline]
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ['id', 'product', 'variant', 'is_primary', 'sort_order', 'status']
+    list_display = ['id', 'variant', 'is_primary', 'sort_order', 'status']
 
 @admin.register(ProductAttribute)
 class ProductAttributeAdmin(admin.ModelAdmin):

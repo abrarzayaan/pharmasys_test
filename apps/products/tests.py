@@ -1,6 +1,10 @@
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
+# pyrefly: ignore [missing-import]
 from django.urls import reverse
+# pyrefly: ignore [missing-import]
 from rest_framework import status
+# pyrefly: ignore [missing-import]
 from rest_framework.test import APITestCase
 
 from apps.products.models import Brand, Category, Product, ProductVariant
@@ -122,3 +126,71 @@ class SubCategoryVariantListTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.variant.id)
+
+
+class ProductImageTests(APITestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            phone_number='4444444444',
+            email='vendor3@example.com',
+            username='vendor3',
+            password='StrongPass123!',
+        )
+        self.vendor_profile = VendorProfile.objects.create(
+            user=self.user,
+            name='Vendor Three',
+            slug='vendor-three',
+            status='active',
+        )
+        self.category = Category.objects.create(name='Syrups', slug='syrups', status='active')
+        self.product = Product.objects.create(
+            vendor=self.vendor_profile,
+            category=self.category,
+            name='Cough Syrup',
+            slug='cough-syrup',
+            status='active',
+            approval_status='approved',
+        )
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            variant_name='100ml Bottle',
+            sku='SKU-SYRUP-1',
+            price='50.00',
+            status='active',
+        )
+
+    def test_product_image_belongs_to_variant(self):
+        import io
+        from PIL import Image
+        # pyrefly: ignore [missing-import]
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.products.models import ProductImage
+
+        # Create large test image in memory
+        file_obj = io.BytesIO()
+        image = Image.new('RGB', size=(2000, 2000), color=(255, 0, 0))
+        image.save(file_obj, 'JPEG', quality=95)
+        file_obj.seek(0)
+
+        uploaded_file = SimpleUploadedFile("test_large_image.jpg", file_obj.read(), content_type="image/jpeg")
+
+        img_instance = ProductImage.objects.create(
+            variant=self.variant,
+            image_url=uploaded_file,
+            is_primary=True,
+        )
+
+        self.assertEqual(img_instance.variant, self.variant)
+        self.assertIn("100ml Bottle", str(img_instance))
+
+        # Verify image compression occurred (dimensions <= 1200)
+        saved_img = Image.open(img_instance.image_url)
+        self.assertLessEqual(saved_img.width, 1200)
+        self.assertLessEqual(saved_img.height, 1200)
+
+        # Test subcategory variant list returns variant thumbnail
+        url = reverse('subcategory-product-variants', kwargs={'subcategory_id': self.category.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['results'][0]['thumbnail'].endswith(img_instance.image_url.url))
+

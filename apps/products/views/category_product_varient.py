@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import generics, permissions
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from apps.products.models import Category, ProductVariant
@@ -6,6 +8,7 @@ from apps.products.serializers.category_product_varient import (
     SubCategorySerializer,
     ProductVariantListSerializer,
 )
+# pyrefly: ignore [missing-import]
 from rest_framework.pagination import PageNumberPagination
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10                  # ডিফল্ট প্রোডাক্ট সংখ্যা
@@ -53,6 +56,7 @@ class ProductVariantListAPIView(generics.ListAPIView):
                 "product__category",
                 "product__brand",
             )
+            .prefetch_related("images")
             .filter(
                 product__category_id=subcategory_id,
                 product__deleted_at__isnull=True,

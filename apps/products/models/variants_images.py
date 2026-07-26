@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
 from .category_brand import StatusChoices
 from .product_core import Product
@@ -73,19 +74,11 @@ class ProductVariant(models.Model):
 class ProductImage(models.Model):
     """
     PharmaSys Product Image Gallery.
-    Can be tied to a generic product or a specific variant.
+    Tied directly to a specific variant.
     """
-    product = models.ForeignKey(
-        Product, 
-        on_delete=models.CASCADE, 
-        related_name='images'
-    )
-    # কন্ডিশনাল নাল: ইমেজ যদি নির্দিষ্ট কোনো ভ্যারিয়েন্টের হয় (যেমন: পাতার কালার বা প্যাকের সাইজ আলাদা হলে)
     variant = models.ForeignKey(
         ProductVariant, 
         on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
         related_name='images'
     )
     image_url = models.ImageField(upload_to='products/gallery/')
@@ -103,4 +96,48 @@ class ProductImage(models.Model):
         ordering = ['sort_order']
 
     def __str__(self):
-        return f"Image for {self.product.name}"
+        return f"Image for {self.variant.variant_name if self.variant else 'Variant'}"
+
+    def save(self, *args, **kwargs):
+        if self.image_url:
+            # pyrefly: ignore [missing-import]
+            from django.core.files.uploadedfile import UploadedFile
+            if hasattr(self.image_url, 'file') and isinstance(self.image_url.file, UploadedFile):
+                self._compress_image()
+        super().save(*args, **kwargs)
+
+    def _compress_image(self):
+        import io
+        import os
+        from PIL import Image
+        # pyrefly: ignore [missing-import]
+        from django.core.files.base import ContentFile
+
+        try:
+            img = Image.open(self.image_url)
+            
+            fmt = img.format if img.format in ['JPEG', 'PNG', 'WEBP'] else 'JPEG'
+            if fmt == 'JPEG' and img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            
+            img.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+            
+            output = io.BytesIO()
+            if fmt == 'JPEG':
+                img.save(output, format='JPEG', quality=75, optimize=True)
+                ext = '.jpg'
+            elif fmt == 'WEBP':
+                img.save(output, format='WEBP', quality=75)
+                ext = '.webp'
+            else:
+                img.save(output, format=fmt, optimize=True)
+                ext = f'.{fmt.lower()}'
+            
+            output.seek(0)
+            
+            base_name = os.path.splitext(os.path.basename(self.image_url.name))[0]
+            new_filename = f"{base_name}{ext}"
+            
+            self.image_url.save(new_filename, ContentFile(output.getvalue()), save=False)
+        except Exception:
+            pass
