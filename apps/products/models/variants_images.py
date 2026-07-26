@@ -54,8 +54,51 @@ class ProductVariant(models.Model):
         default=StatusChoices.ACTIVE
     )
     
-    # Meta JSON: { "pack_size": "10 pcs", "color": "", "size": "" }
-    meta = models.JSONField(default=dict, blank=True)
+    # ------------------------------------------------------------------
+    # JSON Descriptions & Information
+    # ------------------------------------------------------------------
+    # short_description JSON Example:
+    # {
+    #     "dosage": "1 tablet twice daily after meals",
+    #     "storage": "Store below 30°C in a dry place away from light",
+    #     "warnings": "Do not exceed recommended dose",
+    #     "side_effects": "Mild dizziness or stomach upset in rare cases"
+    # }
+    short_description = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="JSON for Usage, Dosage, Storage & Safety Advice"
+    )
+
+    # long_description JSON Example:
+    # {
+    #     "about": "Napa Extra 500mg is a fast-acting pain reliever and fever reducer.",
+    #     "highlights": [
+    #         "Fast action formula",
+    #         "Gentle on stomach",
+    #         "Approved by DGDA"
+    #     ],
+    #     "indications": "Relief from fever, headaches, toothaches, and body pain."
+    # }
+    long_description = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="JSON for Overview, About, Highlights & Detailed Specs"
+    )
+
+    # meta JSON Example:
+    # {
+    #     "pack_size": "10 Pcs Blister Pack",
+    #     "is_hot_deal": true,
+    #     "is_best_selling": true,
+    #     "is_top_rated": true,
+    #     "is_featured": true
+    # }
+    meta = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="JSON for promotional flags (is_hot_deal, is_best_selling, is_top_rated, is_featured) and pack meta"
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

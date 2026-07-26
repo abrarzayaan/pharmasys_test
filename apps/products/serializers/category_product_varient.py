@@ -42,6 +42,7 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
             "product_name",
             "product_slug",
             "variant_name",
+            "short_description",
             "sku",
             "price",
             "sale_price",
@@ -51,6 +52,7 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
             "brand_id",
             "brand_name",
             "is_prescription_required",
+            "meta",
         )
 
     def get_thumbnail(self, obj):

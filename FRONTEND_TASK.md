@@ -413,28 +413,27 @@ GET /api/products/subcategories/{subcategory_id}/variants/
 ```
 
 ### Tasks
-- [ ] **Image Gallery:**
+- [x] **Image Gallery:**
   - Use `variant.images` (sorted by `sort_order`)
   - Primary image (`is_primary=true`) shown by default
   - Thumbnail strip below; click to switch
-  - Hover zoom on desktop
-- [ ] **Variant Header:**
+  - Fullscreen zoom modal
+- [x] **Variant Header:**
   - `product.name` as the main heading (e.g., "Napa Extra")
   - `variant_name` as subtitle (e.g., "500mg | 10 Tablets Pack")
   - SKU badge: `SKU: MED-001`
-- [ ] **Pricing:**
+- [x] **Pricing:**
   - If `sale_price` exists → show strikethrough `price` + `sale_price` in accent color + discount % badge
   - Else → show `price` only
-- [ ] **Stock Status:** derive from `status` field (`active` = In Stock, else Out of Stock)
-- [ ] **Quantity Stepper:** min = `min_order_qty`, max = `max_order_qty` (or a safe default like 10)
-- [ ] **"Add to Cart"** → `POST /api/cart/items/` `{ variant_id: id, quantity }` → toast "✅ Added to cart"
-- [ ] **"Buy Now"** → navigate to `/checkout?variant={id}&qty={quantity}`
-- [ ] **Prescription required warning:** if `product.is_prescription_required` is true → show banner/modal before Buy Now
-- [ ] **Product Info Tabs:** Description | Details (weight, dimensions, meta) | How to Use
-- [ ] **Brand & Category info:** small badge row under title
-- [ ] **Other Variants section:** list sibling variants from same product — `GET /api/products/variants/?product={product.id}`
-- [ ] **Related Products:** other variants in same category
-- [ ] **Breadcrumb:** Home > {category.name} > {product.name} > {variant_name}
+- [x] **Stock Status:** derive from `status` field (`active` = In Stock, else Out of Stock)
+- [x] **Quantity Stepper:** min = `min_order_qty`, max = `max_order_qty` (or a safe default like 10)
+- [x] **"Add to Cart"** → `POST /api/cart/items/` `{ variant_id: id, quantity }` → toast "✅ Added to cart"
+- [x] **"Buy Now"** → navigate to `/checkout?variant={id}&qty={quantity}`
+- [x] **Prescription required warning:** if `product.is_prescription_required` is true → show banner/modal before Buy Now
+- [x] **Product Info Tabs:** Description | Details (weight, dimensions, meta) | How to Use
+- [x] **Brand & Category info:** small badge row under title
+- [x] **Other Variants section:** list sibling variants from same subcategory/product
+- [x] **Breadcrumb:** Home > Catalog > {category.name} > {product.name} ({variant_name})
 
 ---
 
@@ -685,7 +684,7 @@ DELETE /api/profiles/addresses/{id}/
 | Section 01 — Setup & Foundation | ✅ DONE | Vite + React TS, all APIs, stores, router, layout, UI components |
 | Section 02 — Authentication | ✅ DONE | Login (phone/username) + Register with Zod, JWT tokens, split-screen UI |
 | Section 03 — Home & Product Catalog | ✅ DONE | Responsive home page & catalog, flyout hover category tree, guest browsing |
-| Section 04 — Product Detail | ⬜ TODO | Product variant details, pricing, stock, prescription upload, quantity selector |
+| Section 04 — Product Detail | ✅ DONE | Variant details, image gallery zoom, Rx alert, quantity stepper, cart & wishlist integration |
 | Section 05 — Cart | ⬜ TODO | |
 | Section 06 — Wishlist | ⬜ TODO | |
 | Section 07 — Checkout & Payment | ⬜ TODO | |

@@ -60,9 +60,18 @@ export default function HomePage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Dynamic Section Filtering based on ProductVariant.meta flags
+  const bestSellingVariants = variants.filter((v: any) => v.meta?.is_best_selling);
+  const bestSellingList = bestSellingVariants.length > 0 ? bestSellingVariants : variants.slice(0, 6);
+
+  const topRatedVariants = variants.filter((v: any) => v.meta?.is_top_rated || v.meta?.is_featured);
+  const topRatedList = topRatedVariants.length > 0 ? topRatedVariants : variants.slice(0, 6);
+
   // Filtered variants for tab selection
   const popularVariants = activeTabId
     ? variants.filter((v: any) => v.category_id === activeTabId)
+    : variants.filter((v: any) => v.meta?.is_hot_deal || v.meta?.is_featured).length > 0
+    ? variants.filter((v: any) => v.meta?.is_hot_deal || v.meta?.is_featured)
     : variants;
 
   const topCategoryIcons = [
@@ -207,7 +216,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {variants.slice(0, 6).map((v: any) => (
+            {bestSellingList.slice(0, 6).map((v: any) => (
               <VariantCard key={v.id} variant={v} showTimer />
             ))}
           </div>
@@ -341,7 +350,7 @@ export default function HomePage() {
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {variants.slice(0, 6).map((v: any) => (
+          {topRatedList.slice(0, 6).map((v: any) => (
             <VariantCard key={v.id} variant={v} />
           ))}
         </div>
