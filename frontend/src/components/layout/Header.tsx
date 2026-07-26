@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
   ShoppingBag,
@@ -14,6 +14,7 @@ import {
   MapPin,
   Flame,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useCartStore } from '@/store/cart.store';
@@ -25,6 +26,7 @@ import ThemeSelector from './ThemeSelector';
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isLoggedIn, logout } = useAuthStore();
   const itemCount = useCartStore((s) => s.itemCount);
   const wishlistCount = useWishlistStore((s) => s.items.length);
@@ -35,6 +37,15 @@ export default function Header() {
   const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [activeHoverCat, setActiveHoverCat] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Active navigation helper
+  const isNavActive = (path: string, filterParam?: string) => {
+    if (filterParam) {
+      return location.pathname === path && location.search.includes(`filter=${filterParam}`);
+    }
+    if (path === '/') return location.pathname === '/' && !location.search;
+    return location.pathname === path && !location.search;
+  };
 
   // Fetch categories with caching
   const { data: categories = [] } = useQuery({
@@ -320,32 +331,142 @@ export default function Header() {
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-6 text-xs font-semibold text-content-secondary">
-            <Link to="/" className="text-primary-400 hover:text-primary-300 transition-colors">
+          {/* Navigation Links with Active State Highlighting */}
+          <nav className="flex items-center gap-6 text-xs font-semibold">
+            <Link
+              to="/"
+              className={`transition-colors ${
+                isNavActive('/')
+                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                  : 'text-content-secondary hover:text-content-primary'
+              }`}
+            >
               Home
             </Link>
-            <Link to="/products" className="hover:text-content-primary transition-colors">
-              Shop
+            <Link
+              to="/products"
+              className={`transition-colors ${
+                isNavActive('/products')
+                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                  : 'text-content-secondary hover:text-content-primary'
+              }`}
+            >
+              Shop All
             </Link>
-            <Link to="/products" className="hover:text-content-primary transition-colors flex items-center gap-1">
-              Categories
-              <span className="px-1.5 py-0.2 rounded bg-accent-500/20 text-accent-400 text-[9px] font-bold">
-                SALE
-              </span>
-            </Link>
-            <Link to="/products" className="hover:text-content-primary transition-colors flex items-center gap-1">
-              Products
-              <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-400 text-[9px] font-bold flex items-center gap-0.5">
+            <Link
+              to="/products?filter=hot_deals"
+              className={`flex items-center gap-1 transition-colors ${
+                isNavActive('/products', 'hot_deals')
+                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                  : 'text-content-secondary hover:text-content-primary'
+              }`}
+            >
+              Hot Deals
+              <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold flex items-center gap-0.5 animate-pulse">
                 <Flame className="w-2.5 h-2.5" /> HOT
               </span>
             </Link>
-            <Link to="/products" className="hover:text-content-primary transition-colors">
-              Top deals
+            <Link
+              to="/products?filter=best_selling"
+              className={`flex items-center gap-1 transition-colors ${
+                isNavActive('/products', 'best_selling')
+                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                  : 'text-content-secondary hover:text-content-primary'
+              }`}
+            >
+              Top Deals
+              <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[9px] font-bold">
+                BEST
+              </span>
+            </Link>
+            <Link
+              to="/products?filter=top_rated"
+              className={`transition-colors ${
+                isNavActive('/products', 'top_rated')
+                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                  : 'text-content-secondary hover:text-content-primary'
+              }`}
+            >
+              Top Rated
             </Link>
           </nav>
         </div>
       </div>
+
+      {/* ── MOBILE MENU DRAWER ── */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-bg-card border-t border-bg-border px-4 py-4 space-y-4 shadow-card">
+          <form onSubmit={handleSearch} className="flex items-center bg-bg-surface border border-bg-border rounded-full p-1">
+            <input
+              type="text"
+              placeholder="Search medicines, health products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-1 text-xs text-content-primary placeholder:text-content-muted focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center mr-0.5"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          </form>
+
+          <nav className="flex flex-col space-y-1 text-xs font-semibold">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`px-3 py-2 rounded-xl transition-colors ${
+                isNavActive('/') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              }`}
+            >
+              Home Page
+            </Link>
+            <Link
+              to="/products"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`px-3 py-2 rounded-xl transition-colors ${
+                isNavActive('/products') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              }`}
+            >
+              Shop All Products
+            </Link>
+            <Link
+              to="/products?filter=hot_deals"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
+                isNavActive('/products', 'hot_deals') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              }`}
+            >
+              <span>Hot Deals</span>
+              <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold flex items-center gap-1">
+                <Flame className="w-3 h-3" /> HOT
+              </span>
+            </Link>
+            <Link
+              to="/products?filter=best_selling"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
+                isNavActive('/products', 'best_selling') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              }`}
+            >
+              <span>Top Deals (Best Selling)</span>
+              <span className="px-2 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[10px] font-bold">
+                BEST
+              </span>
+            </Link>
+            <Link
+              to="/products?filter=top_rated"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`px-3 py-2 rounded-xl transition-colors ${
+                isNavActive('/products', 'top_rated') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              }`}
+            >
+              Top Rated Products
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

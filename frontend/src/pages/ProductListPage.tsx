@@ -24,6 +24,7 @@ export default function ProductListPage() {
   const currentSubcategory = searchParams.get('subcategory') || '';
   const currentCategory = searchParams.get('category') || '';
   const currentBrand = searchParams.get('brand') || '';
+  const currentFilter = searchParams.get('filter') || '';
 
   const [searchInput, setSearchInput] = useState(currentSearch);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(
@@ -44,12 +45,20 @@ export default function ProductListPage() {
     setSearchInput(searchParams.get('search') || '');
     if (searchParams.get('subcategory')) {
       setSelectedSubcategoryId(parseInt(searchParams.get('subcategory')!));
+    } else {
+      setSelectedSubcategoryId(null);
     }
+
     if (searchParams.get('category')) {
       setExpandedCatId(parseInt(searchParams.get('category')!));
+    } else {
+      setExpandedCatId(null);
     }
+
     if (searchParams.get('brand')) {
       setSelectedBrandId(parseInt(searchParams.get('brand')!));
+    } else {
+      setSelectedBrandId(null);
     }
   }, [searchParams]);
 
@@ -87,7 +96,7 @@ export default function ProductListPage() {
         if (Array.isArray(raw)) return raw;
         return (raw as any).results || [];
       } else {
-        const res = await productsApi.getVariants();
+        const res = await productsApi.getVariants({ page_size: 100 });
         const raw = res.data;
         if (Array.isArray(raw)) return raw;
         return (raw as any).results || [];
@@ -100,9 +109,28 @@ export default function ProductListPage() {
   const filteredVariants = useMemo(() => {
     let result = [...rawVariants];
 
-    // Category Filter (if expanded category set and no specific subcategory selected)
+    // Meta filter (best_selling, hot_deals, top_rated)
+    if (currentFilter === 'best_selling') {
+      result = result.filter((item) => (item as any).meta?.is_best_selling === true);
+    } else if (currentFilter === 'hot_deals') {
+      result = result.filter((item) => (item as any).meta?.is_hot_deal === true);
+    } else if (currentFilter === 'top_rated') {
+      result = result.filter(
+        (item) => (item as any).meta?.is_top_rated === true || (item as any).meta?.is_featured === true
+      );
+    }
+
+    // Category Filter (if parent category set and no specific subcategory selected)
     if (expandedCatId && !selectedSubcategoryId) {
-      result = result.filter((item) => item.category_id === expandedCatId);
+      const parentCat = categories.find((c: any) => c.id === expandedCatId);
+      const allowedCategoryIds = new Set<number>();
+      allowedCategoryIds.add(expandedCatId);
+      if (parentCat && Array.isArray(parentCat.children)) {
+        parentCat.children.forEach((sub: any) => allowedCategoryIds.add(sub.id));
+      }
+      result = result.filter(
+        (item) => allowedCategoryIds.has(item.category_id) || allowedCategoryIds.has((item as any).category)
+      );
     }
 
     // Search query filter
@@ -137,7 +165,16 @@ export default function ProductListPage() {
     });
 
     return result;
-  }, [rawVariants, searchInput, selectedBrandId, expandedCatId, selectedSubcategoryId, rxOnlyFilter, sortBy]);
+  }, [
+    rawVariants,
+    currentFilter,
+    searchInput,
+    selectedBrandId,
+    expandedCatId,
+    selectedSubcategoryId,
+    rxOnlyFilter,
+    sortBy,
+  ]);
 
   const clearFilters = () => {
     setSearchInput('');
@@ -148,23 +185,55 @@ export default function ProductListPage() {
     setSearchParams({});
   };
 
+  const removeFilterParam = (paramName: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete(paramName);
+    setSearchParams(nextParams);
+  };
+
   const hasActiveFilters =
     Boolean(searchInput) ||
+    Boolean(currentFilter) ||
     selectedSubcategoryId !== null ||
     expandedCatId !== null ||
     selectedBrandId !== null ||
     rxOnlyFilter;
 
-  // Active Category Name
+  // Active Category & Subcategory Name
   const activeCategoryName = categories.find((c: any) => c.id === expandedCatId)?.name;
+  const activeSubcategoryName = useMemo(() => {
+    if (!selectedSubcategoryId) return null;
+    for (const cat of categories) {
+      if (Array.isArray(cat.children)) {
+        const sub = cat.children.find((s: any) => s.id === selectedSubcategoryId);
+        if (sub) return sub.name;
+      }
+    }
+    return null;
+  }, [categories, selectedSubcategoryId]);
 
+  // Dynamic Page Header Title
+  const filterTitleMap: Record<string, string> = {
+    best_selling: '🔥 Best Selling Products',
+    hot_deals: '⚡ Hot Deals & Offers',
+    top_rated: '⭐ Top Rated & Featured Products',
+  };
+  const activeTitle = currentFilter
+    ? filterTitleMap[currentFilter] || 'Promotional Products'
+    : activeSubcategoryName
+    ? `${activeSubcategoryName}`
+    : activeCategoryName
+    ? `${activeCategoryName} Catalog`
+    : searchInput
+    ? `Search Results for "${searchInput}"`
+    : 'Pharmacy Product Catalog';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 py-6 pb-16">
       {/* ── CLEAN BANNER HEADER ── */}
       <div className="bg-bg-card border border-bg-border rounded-3xl p-6 sm:p-8 space-y-2 shadow-card">
         <h1 className="font-head font-extrabold text-2xl sm:text-3xl text-content-primary">
-          {activeCategoryName ? `${activeCategoryName} Catalog` : 'Pharmacy Product Catalog'}
+          {activeTitle}
         </h1>
         <p className="text-content-secondary text-xs sm:text-sm">
           Browse authentic medicines, health supplements, and verified pharmaceutical SKUs.
@@ -351,6 +420,12 @@ export default function ProductListPage() {
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] text-content-muted">Active:</span>
+              {currentFilter && (
+                <Badge variant="warning" className="gap-1 text-[11px] rounded-full uppercase tracking-wider font-bold">
+                  {currentFilter.replace('_', ' ')}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => removeFilterParam('filter')} />
+                </Badge>
+              )}
               {searchInput && (
                 <Badge variant="primary" className="gap-1 text-[11px] rounded-full">
                   "{searchInput}"
@@ -360,13 +435,13 @@ export default function ProductListPage() {
               {expandedCatId && (
                 <Badge variant="accent" className="gap-1 text-[11px] rounded-full">
                   Cat: {activeCategoryName}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => setExpandedCatId(null)} />
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => removeFilterParam('category')} />
                 </Badge>
               )}
               {selectedSubcategoryId && (
                 <Badge variant="primary" className="gap-1 text-[11px] rounded-full">
                   Subcat #{selectedSubcategoryId}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedSubcategoryId(null)} />
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => removeFilterParam('subcategory')} />
                 </Badge>
               )}
               {rxOnlyFilter && (
@@ -407,6 +482,161 @@ export default function ProductListPage() {
           )}
         </main>
       </div>
+
+      {/* ── MOBILE FILTER BOTTOM DRAWER ── */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileFilterOpen(false)}
+          />
+
+          {/* Drawer Sheet */}
+          <div className="relative z-10 bg-bg-card border-t border-bg-border rounded-t-3xl p-6 space-y-5 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between pb-3 border-b border-bg-border">
+              <h3 className="font-head font-bold text-base text-content-primary flex items-center gap-2">
+                <SlidersHorizontal className="w-4.5 h-4.5 text-primary-400" />
+                Filter Catalog
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="p-1 rounded-full bg-bg-surface border border-bg-border text-content-muted hover:text-content-primary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Categories & Subcategories Accordion */}
+            <div className="space-y-3">
+              <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
+                Categories & Subcategories
+              </h4>
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                {categories.map((cat: any) => {
+                  const isExpanded = expandedCatId === cat.id;
+                  const hasSub = cat.children && cat.children.length > 0;
+                  return (
+                    <div key={cat.id} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedCatId(isExpanded ? null : cat.id);
+                          setSelectedSubcategoryId(null);
+                        }}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-colors text-left ${
+                          isExpanded
+                            ? 'bg-primary-600/20 text-primary-400'
+                            : 'text-content-secondary bg-bg-surface/50'
+                        }`}
+                      >
+                        <span className="truncate">{cat.name}</span>
+                        {hasSub && (
+                          <ChevronRight
+                            className={`w-4 h-4 transition-transform ${
+                              isExpanded ? 'rotate-90 text-primary-400' : 'text-content-muted'
+                            }`}
+                          />
+                        )}
+                      </button>
+
+                      {isExpanded && hasSub && (
+                        <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
+                          {cat.children.map((sub: any) => {
+                            const isSelected = selectedSubcategoryId === sub.id;
+                            return (
+                              <button
+                                key={sub.id}
+                                type="button"
+                                onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
+                                  isSelected
+                                    ? 'bg-primary-600/30 text-primary-300 font-bold'
+                                    : 'text-content-muted hover:bg-bg-surface'
+                                }`}
+                              >
+                                <span>{sub.name}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-primary-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Brands Filter */}
+            {brands.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-bg-border">
+                <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
+                  Brands
+                </h4>
+                <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar">
+                  {brands.map((b: any) => {
+                    const isSelected = selectedBrandId === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => setSelectedBrandId(isSelected ? null : b.id)}
+                        className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
+                          isSelected
+                            ? 'bg-primary-600/20 text-primary-400 font-bold border border-primary-500/40'
+                            : 'bg-bg-surface/50 text-content-secondary border border-bg-border'
+                        }`}
+                      >
+                        <span className="truncate">{b.name}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-primary-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Rx Filter */}
+            <div className="pt-3 border-t border-bg-border">
+              <label className="flex items-center justify-between cursor-pointer p-2 bg-bg-surface/50 rounded-xl border border-bg-border">
+                <span className="text-xs font-semibold text-content-secondary">
+                  Prescription Only (Rx)
+                </span>
+                <input
+                  type="checkbox"
+                  checked={rxOnlyFilter}
+                  onChange={(e) => setRxOnlyFilter(e.target.checked)}
+                  className="w-4 h-4 rounded border-bg-border text-primary-600 focus:ring-primary-500 bg-bg-surface"
+                />
+              </label>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="flex-1 rounded-full text-xs font-bold"
+                >
+                  Reset All
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setMobileFilterOpen(false)}
+                className="flex-1 rounded-full text-xs font-bold py-2.5"
+              >
+                Apply Filters ({filteredVariants.length} items)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,6 +13,7 @@ import {
   Mail,
   ChevronRight,
   Stethoscope,
+  Layers,
 } from 'lucide-react';
 import { productsApi } from '@/api/products.api';
 import type { Category, ProductVariantItem, Brand } from '@/types/product.types';
@@ -23,6 +24,13 @@ import Skeleton from '@/components/ui/Skeleton';
 export default function HomePage() {
   const navigate = useNavigate();
   const [activeTabId, setActiveTabId] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+
+  // Reset visible count when active tab changes
+  const handleTabChange = (tabId: number | null) => {
+    setActiveTabId(tabId);
+    setVisibleCount(10);
+  };
 
   // Cached Query for Categories
   const { data: categories = [], isLoading: catLoading } = useQuery({
@@ -36,6 +44,27 @@ export default function HomePage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  // Extract all sub-categories from categories and cat.children, deduplicated by ID
+  const subCategories = useMemo(() => {
+    const map = new Map<number, any>();
+
+    categories.forEach((cat: any) => {
+      // If it's a sub-category directly (parent is not null)
+      if (cat.parent !== null && cat.parent !== undefined) {
+        map.set(cat.id, cat);
+      }
+      // If it has children array (sub-categories nested inside main category)
+      if (Array.isArray(cat.children)) {
+        cat.children.forEach((child: any) => {
+          map.set(child.id, child);
+        });
+      }
+    });
+
+    // Fallback to categories if no parent-child relationship was found
+    return map.size > 0 ? Array.from(map.values()) : categories;
+  }, [categories]);
+
   // Cached Query for Brands
   const { data: brands = [] } = useQuery({
     queryKey: ['brands'],
@@ -48,11 +77,11 @@ export default function HomePage() {
     staleTime: 1000 * 60 * 10,
   });
 
-  // Cached Query for Product Variants
+  // Cached Query for Product Variants (Fetch page_size=100 to get all subcategory products)
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
     queryKey: ['variants-all'],
     queryFn: async () => {
-      const res = await productsApi.getVariants();
+      const res = await productsApi.getVariants({ page_size: 100 });
       const raw = res.data;
       if (Array.isArray(raw)) return raw;
       return (raw as any).results || [];
@@ -67,11 +96,9 @@ export default function HomePage() {
   const topRatedVariants = variants.filter((v: any) => v.meta?.is_top_rated || v.meta?.is_featured);
   const topRatedList = topRatedVariants.length > 0 ? topRatedVariants : variants.slice(0, 6);
 
-  // Filtered variants for tab selection
-  const popularVariants = activeTabId
-    ? variants.filter((v: any) => v.category_id === activeTabId)
-    : variants.filter((v: any) => v.meta?.is_hot_deal || v.meta?.is_featured).length > 0
-    ? variants.filter((v: any) => v.meta?.is_hot_deal || v.meta?.is_featured)
+  // Filtered variants by selected Sub-Category tab
+  const popularSubcategoryVariants = activeTabId !== null
+    ? variants.filter((v: any) => v.category_id === activeTabId || v.category === activeTabId)
     : variants;
 
   const topCategoryIcons = [
@@ -204,9 +231,18 @@ export default function HomePage() {
 
       {/* ── BEST SELLING PRODUCTS (SCREENSHOT 02) ── */}
       <section className="space-y-6">
-        <h2 className="font-head font-bold text-xl sm:text-2xl text-center text-content-primary">
-          Best Selling Products
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-head font-bold text-xl sm:text-2xl text-content-primary">
+            Best Selling Products
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate('/products?filter=best_selling')}
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary-400 hover:text-primary-300 hover:underline"
+          >
+            See All <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {variantsLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -232,7 +268,7 @@ export default function HomePage() {
             <div className="pt-3">
               <button
                 type="button"
-                onClick={() => navigate('/products')}
+                onClick={() => navigate('/products?filter=hot_deals')}
                 className="inline-flex items-center gap-1 text-xs font-bold text-accent-400 hover:underline"
               >
                 Buy Now <ChevronRight className="w-3.5 h-3.5" />
@@ -257,7 +293,7 @@ export default function HomePage() {
             <div className="pt-3">
               <button
                 type="button"
-                onClick={() => navigate('/products')}
+                onClick={() => navigate('/products?filter=best_selling')}
                 className="inline-flex items-center gap-1 text-xs font-bold text-accent-400 hover:underline"
               >
                 View More <ChevronRight className="w-3.5 h-3.5" />
@@ -267,47 +303,105 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── POPULAR CATEGORIES TABS SECTION (SCREENSHOT 03) ── */}
+      {/* ── POPULAR SUB-CATEGORIES & PRODUCTS SECTION ── */}
       <section className="space-y-6">
-        <h2 className="font-head font-bold text-xl sm:text-2xl text-center text-content-primary">
-          Popular Categories
-        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="font-head font-bold text-xl sm:text-2xl text-content-primary">
+              Popular Sub-Categories
+            </h2>
+            <p className="text-xs text-content-muted">
+              Explore healthcare products tailored by specific sub-categories
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              activeTabId
+                ? navigate(`/products?subcategory=${activeTabId}`)
+                : navigate('/products')
+            }
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary-400 hover:text-primary-300 hover:underline shrink-0"
+          >
+            See All <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-        {/* Tab Switcher Pills */}
+        {/* Sub-Category Switcher Pills */}
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveTabId(null)}
+            onClick={() => handleTabChange(null)}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
               activeTabId === null
                 ? 'bg-primary-600 text-white shadow-glow'
                 : 'bg-bg-card border border-bg-border text-content-secondary hover:text-content-primary'
             }`}
           >
-            All Products
+            All Sub-Categories
           </button>
-          {categories.slice(0, 4).map((cat: any) => (
+          {subCategories.map((subCat: any) => (
             <button
-              key={cat.id}
+              key={subCat.id}
               type="button"
-              onClick={() => setActiveTabId(cat.id)}
+              onClick={() => handleTabChange(subCat.id)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                activeTabId === cat.id
+                activeTabId === subCat.id
                   ? 'bg-primary-600 text-white shadow-glow'
                   : 'bg-bg-card border border-bg-border text-content-secondary hover:text-content-primary'
               }`}
             >
-              {cat.name}
+              {subCat.name}
             </button>
           ))}
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {popularVariants.slice(0, 6).map((v: any) => (
-            <VariantCard key={v.id} variant={v} />
-          ))}
-        </div>
+        {/* Product Variants Grid matching selected Sub-Category */}
+        {variantsLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-2xl" />
+            ))}
+          </div>
+        ) : popularSubcategoryVariants.length > 0 ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {popularSubcategoryVariants.slice(0, visibleCount).map((v: any) => (
+                <VariantCard key={v.id} variant={v} />
+              ))}
+            </div>
+
+            {/* See More & Full Catalog Actions */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              {popularSubcategoryVariants.length > visibleCount && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibleCount((prev) => prev + 10)}
+                  className="rounded-full px-6 py-2 text-xs font-bold gap-2 border-primary-500/40 hover:border-primary-500"
+                >
+                  See More (+{popularSubcategoryVariants.length - visibleCount} more)
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  activeTabId
+                    ? navigate(`/products?subcategory=${activeTabId}`)
+                    : navigate('/products')
+                }
+                className="rounded-full px-6 py-2 text-xs font-bold gap-1.5"
+              >
+                View Full Catalog Page <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-bg-card border border-bg-border rounded-3xl text-content-muted text-xs">
+            No products found under this sub-category.
+          </div>
+        )}
 
 
         {/* 2-COLUMN PROMO BANNER STRIP (SCREENSHOT 03) */}
@@ -322,7 +416,7 @@ export default function HomePage() {
             <div className="pt-3">
               <button
                 type="button"
-                onClick={() => navigate('/products')}
+                onClick={() => navigate('/products?filter=hot_deals')}
                 className="inline-flex items-center gap-1 text-xs font-bold text-accent-400 hover:underline"
               >
                 Buy Now <ChevronRight className="w-3.5 h-3.5" />
@@ -345,9 +439,18 @@ export default function HomePage() {
 
       {/* ── TOP RATED PRODUCTS & TESTIMONIALS (SCREENSHOT 04) ── */}
       <section className="space-y-6">
-        <h2 className="font-head font-bold text-xl sm:text-2xl text-center text-content-primary">
-          Top Rated Products
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-head font-bold text-xl sm:text-2xl text-content-primary">
+            Top Rated Products
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate('/products?filter=top_rated')}
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary-400 hover:text-primary-300 hover:underline"
+          >
+            See All <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {topRatedList.slice(0, 6).map((v: any) => (

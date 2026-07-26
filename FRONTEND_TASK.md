@@ -694,7 +694,7 @@ DELETE /api/profiles/addresses/{id}/
 
 ---
 
-> **Current:** Section 03 & Authentication Fixes ✅ COMPLETED.
+> **Current:** Section 01, 02, 03 & 04 ✅ COMPLETED.
 >
-> **Next Step:** Tell me **"start section 04"** to build the **Product Variant Detail Page** (`/variants/:id`).
+> **Next Step:** Tell me **"start section 05"** to build the **Cart Page & Drawer** (`/cart`).
 
