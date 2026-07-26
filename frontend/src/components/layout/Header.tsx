@@ -21,6 +21,7 @@ import { useWishlistStore } from '@/store/wishlist.store';
 import { useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/api/products.api';
 import type { Category } from '@/types/product.types';
+import ThemeSelector from './ThemeSelector';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -185,6 +186,9 @@ export default function Header() {
               <p className="text-xs font-extrabold text-primary-400 mt-0.5">{itemCount}</p>
             </div>
           </Link>
+
+          {/* Theme Selector Dropdown */}
+          <ThemeSelector />
 
           {isLoggedIn ? (
             <div className="relative">

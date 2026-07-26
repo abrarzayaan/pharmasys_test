@@ -5,8 +5,15 @@ import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
 
+import { useThemeStore } from '@/store/theme.store';
+
 export default function Layout() {
   const { pathname } = useLocation();
+  const initTheme = useThemeStore((s) => s.initTheme);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
 
   // Scroll to top on route change
   useEffect(() => {
