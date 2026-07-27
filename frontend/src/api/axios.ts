@@ -4,12 +4,19 @@ import { useAuthStore } from '@/store/auth.store';
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    // If accessed via Network IP (e.g. 192.168.x.x) or domain, point to backend on port 8000
-    if (host !== 'localhost' && host !== '127.0.0.1' && !host.endsWith('.loca.lt') && !host.endsWith('.ngrok-free.app')) {
-      return `http://${host}:8000/api`;
+    // If accessed via Cloudflare Tunnel, loca.lt, ngrok or standard dev proxy
+    if (
+      host.endsWith('.trycloudflare.com') ||
+      host.endsWith('.loca.lt') ||
+      host.endsWith('.ngrok-free.app') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    ) {
+      return '/api';
     }
+    return `http://${host}:8000/api`;
   }
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+  return import.meta.env.VITE_API_BASE_URL || '/api';
 };
 
 const api = axios.create({
