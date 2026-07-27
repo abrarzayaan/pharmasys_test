@@ -1,4 +1,4 @@
-type BadgeVariant = 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'muted';
+type BadgeVariant = 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'muted' | 'info';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   warning: 'bg-yellow-500/20  text-yellow-400  border border-yellow-500/30',
   danger:  'bg-red-500/20     text-red-400     border border-red-500/30',
   muted:   'bg-bg-card        text-content-muted border border-bg-border',
+  info:    'bg-cyan-500/20    text-cyan-400    border border-cyan-500/30',
 };
 
 export default function Badge({ children, variant = 'primary', className = '' }: BadgeProps) {

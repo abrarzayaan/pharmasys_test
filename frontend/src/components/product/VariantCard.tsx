@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Star, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { ProductVariantItem } from '@/types/product.types';
 import { useWishlistStore } from '@/store/wishlist.store';
-import { useCartStore } from '@/store/cart.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useCart } from '@/hooks/useCart';
 import { formatCurrency, formatDiscount } from '@/utils/formatCurrency';
@@ -20,7 +18,6 @@ export default function VariantCard({ variant, showTimer = false }: VariantCardP
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const { toggle, isWishlisted } = useWishlistStore();
-  const incrementCart = useCartStore((s) => s.increment);
   const wishlisted = isWishlisted(variant.id);
   const { addItem, isAdding, updatingVariantId } = useCart();
   const adding = isAdding && updatingVariantId === variant.id;
@@ -114,6 +111,11 @@ export default function VariantCard({ variant, showTimer = false }: VariantCardP
           <h3 className="font-head font-semibold text-content-primary text-xs line-clamp-2 leading-snug group-hover:text-primary-400 transition-colors">
             {variant.product_name}
           </h3>
+          {variant.variant_name && (
+            <span className="text-[11px] font-medium text-primary-400/90 block font-sans truncate">
+              {variant.variant_name}
+            </span>
+          )}
 
           {/* Star Rating */}
           <div className="flex items-center gap-1 pt-0.5">

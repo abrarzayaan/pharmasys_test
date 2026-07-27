@@ -559,8 +559,8 @@ GET   /api/orders/{id}/tracking/
 ```
 
 ### Tasks
-- [ ] **OrdersPage:** order cards with filter tabs (All / Active / Delivered / Cancelled) + pagination
-- [ ] **OrderDetailPage:**
+- [x] **OrdersPage:** order cards with filter tabs (All / Active / Delivered / Cancelled) + pagination
+- [x] **OrderDetailPage:**
   - Header: order number, date, status badge
   - Items from `product_snapshot` (immutable data)
   - Price breakdown
@@ -568,7 +568,7 @@ GET   /api/orders/{id}/tracking/
   - Coupon info if applied
   - "Cancel Order" button (only if status == PLACED)
   - "Track Order" link
-- [ ] **OrderTrackingPage:**
+- [x] **OrderTrackingPage:**
   - Visual stepper: Placed → Confirmed → Processing → Packed → Out for Delivery → Delivered
   - Each step: status + timestamp from history
   - Rider info card
@@ -690,13 +690,13 @@ DELETE /api/profiles/addresses/{id}/
 | Section 05 — Cart | ✅ DONE | Slide-in Cart Drawer + /cart page, items list, quantity stepper, clear cart, total calculations |
 | Section 06 — Wishlist | ✅ DONE | Persistent Zustand store + /wishlist page with parallel queries, add to cart & remove actions |
 | Section 07 — Checkout & Payment | ✅ DONE | Production-ready checkout: COD default, address selector + inline add modal, coupon discount preview, sticky order summary, Order Success celebration page |
-| Section 08 — Orders & Tracking | ⬜ TODO | |
+| Section 08 — Orders & Tracking | ✅ DONE | Order history with filter tabs, order detail view, order cancellation, and 30s auto-refreshing live tracking stepper |
 | Section 09 — Profile & Addresses | ✅ DONE | Account sidebar layout, Profile page (avatar upload, DOB, gender), Addresses page (full CRUD) |
 | Section 10 — Polish & SEO | ⬜ TODO | |
 
 ---
 
-> **Current:** Section 01, 02, 03, 04, 05, 06, 07 & 09 ✅ COMPLETED.
+> **Current:** Section 01, 02, 03, 04, 05, 06, 07, 08 & 09 ✅ COMPLETED.
 >
-> **Next Step:** Tell me **"start section 08"** to build the **Orders & Tracking Module** (`/account/orders`).
+> **Next Step:** Tell me **"start section 10"** to complete the final **Polish & SEO Module**.
 
