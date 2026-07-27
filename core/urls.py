@@ -16,7 +16,7 @@ urlpatterns = [
     path('api/auth/', include('apps.authentication.urls')),
     path('api/profiles/', include('apps.profiles.urls')), # <- এই লাইনটি যোগ করো
     path('api/products/', include('apps.products.urls')),
-    path('api/', include('apps.cart.urls')),
+    path('api/cart/', include('apps.cart.urls')),
     path("api/coupons/",include("apps.coupons.urls"),),
     path("api/checkout/", include("apps.checkout.urls")),
     path("api/", include("apps.orders.urls")),

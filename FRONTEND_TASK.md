@@ -437,9 +437,10 @@ GET /api/products/subcategories/{subcategory_id}/variants/
 
 ---
 
-## Section 05 — Cart
+## Section 05 — Cart ✅ DONE
 
 **Goal:** View, update, remove cart items. Accessible from header (drawer) and full `/cart` page.
+**Status:** ✅ Complete — Cart Drawer & Cart Page (`/cart`) live
 
 ### Pages
 - `CartDrawer` component (slide-in)
@@ -449,45 +450,46 @@ GET /api/products/subcategories/{subcategory_id}/variants/
 
 ```
 GET    /api/cart/                         → full cart with items + totals
-POST   /api/cart/items/                   body: { variant_id, quantity }
+POST   /api/cart/items/                   body: { product_variant_id, quantity }
 PATCH  /api/cart/items/{variant_id}/      body: { quantity }
 DELETE /api/cart/items/{variant_id}/
 DELETE /api/cart/clear/
 ```
 
 ### Tasks
-- [ ] `CartDrawer`: slides from right, shows item count, subtotal, CTA buttons
-- [ ] `CartPage`: items list + order summary sticky sidebar
-- [ ] Item row: thumbnail, name, variant info, qty stepper, price, remove button
-- [ ] Real-time totals update on qty change
-- [ ] "Proceed to Checkout" → `/checkout`
-- [ ] "Continue Shopping" link
-- [ ] Empty cart illustration + CTA
-- [ ] Cart count badge in header (Zustand)
+- [x] `CartDrawer`: slides from right, shows item count, subtotal, CTA buttons
+- [x] `CartPage`: items list + order summary sticky sidebar
+- [x] Item row: thumbnail, name, variant info, qty stepper, price, remove button
+- [x] Real-time totals update on qty change
+- [x] "Proceed to Checkout" → `/checkout`
+- [x] "Continue Shopping" link
+- [x] Empty cart illustration + CTA
+- [x] Cart count badge in header (Zustand) synced with backend state
 
 ### UX
-- Optimistic UI for qty changes
-- Slide-out animation on item remove
-- Skeleton on initial load
+- [x] Optimistic UI for qty changes
+- [x] Slide-out animation on item remove
+- [x] Skeleton on initial load
 
 ---
 
-## Section 06 — Wishlist
+## Section 06 — Wishlist ✅ DONE
 
 **Goal:** Save/remove products, view wishlist page.
+**Status:** ✅ Complete — Wishlist Store & Wishlist Page (`/wishlist`) live
 
-> **Note:** No dedicated backend wishlist API. Store variant IDs in Zustand + localStorage.
+> **Note:** Stored variant IDs in Zustand + localStorage.
 
 ### Page
 - `WishlistPage.tsx` — `/wishlist`
 
 ### Tasks
-- [ ] `wishlistStore`: `{ items: number[], toggle(id), isWishlisted(id), clear() }`
-- [ ] Persist via Zustand `persist` middleware → `localStorage`
-- [ ] Heart icon on every `ProductCard` — filled if wishlisted
-- [ ] `WishlistPage`: fetch variant details from `/api/products/variants/{id}/` for each stored ID
-- [ ] Show: image, name, price, "Add to Cart", "Remove from Wishlist"
-- [ ] Empty wishlist state with illustration
+- [x] `wishlistStore`: `{ items: number[], toggle(id), isWishlisted(id), clear() }`
+- [x] Persist via Zustand `persist` middleware → `localStorage`
+- [x] Heart icon on every `VariantCard` — filled if wishlisted
+- [x] `WishlistPage`: fetch variant details from `/api/products/variants/{id}/` for each stored ID
+- [x] Show: image, name, price, "Add to Cart", "Remove from Wishlist"
+- [x] Empty wishlist state with illustration
 
 ---
 
@@ -609,18 +611,18 @@ DELETE /api/profiles/addresses/{id}/
 ```
 
 ### Tasks
-- [ ] **ProfilePage:**
+- [x] **ProfilePage:**
   - Avatar with upload + preview
   - Read-only: username, email, phone_number
   - Editable: date_of_birth, gender
   - Save with success toast
-- [ ] **AddressesPage:**
+- [x] **AddressesPage:**
   - Address cards: label badge (Home/Office/etc.), name, full address, default star
   - "Add Address" → modal form
   - "Edit" → modal pre-filled
   - "Delete" → confirm dialog
   - Set default toggle
-- [ ] **Account Sidebar Layout:** Profile | Addresses | Orders | Wishlist | Logout
+- [x] **Account Sidebar Layout:** Profile | Addresses | Orders | Wishlist | Logout
 
 ---
 
@@ -685,16 +687,16 @@ DELETE /api/profiles/addresses/{id}/
 | Section 02 — Authentication | ✅ DONE | Login (phone/username) + Register with Zod, JWT tokens, split-screen UI |
 | Section 03 — Home & Product Catalog | ✅ DONE | Responsive home page & catalog, flyout hover category tree, guest browsing |
 | Section 04 — Product Detail | ✅ DONE | Variant details, image gallery zoom, Rx alert, quantity stepper, cart & wishlist integration |
-| Section 05 — Cart | ⬜ TODO | |
-| Section 06 — Wishlist | ⬜ TODO | |
+| Section 05 — Cart | ✅ DONE | Slide-in Cart Drawer + /cart page, items list, quantity stepper, clear cart, total calculations |
+| Section 06 — Wishlist | ✅ DONE | Persistent Zustand store + /wishlist page with parallel queries, add to cart & remove actions |
 | Section 07 — Checkout & Payment | ⬜ TODO | |
 | Section 08 — Orders & Tracking | ⬜ TODO | |
-| Section 09 — Profile & Addresses | ⬜ TODO | |
+| Section 09 — Profile & Addresses | ✅ DONE | Account sidebar layout, Profile page (avatar upload, DOB, gender), Addresses page (full CRUD) |
 | Section 10 — Polish & SEO | ⬜ TODO | |
 
 ---
 
-> **Current:** Section 01, 02, 03 & 04 ✅ COMPLETED.
+> **Current:** Section 01, 02, 03, 04, 05, 06 & 09 ✅ COMPLETED.
 >
-> **Next Step:** Tell me **"start section 05"** to build the **Cart Page & Drawer** (`/cart`).
+> **Next Step:** Tell me **"start section 07"** to build the **Checkout & Payment Module** (`/checkout`).
 

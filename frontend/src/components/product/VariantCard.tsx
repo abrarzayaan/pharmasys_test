@@ -6,7 +6,7 @@ import type { ProductVariantItem } from '@/types/product.types';
 import { useWishlistStore } from '@/store/wishlist.store';
 import { useCartStore } from '@/store/cart.store';
 import { useAuthStore } from '@/store/auth.store';
-import { cartApi } from '@/api/cart.api';
+import { useCart } from '@/hooks/useCart';
 import { formatCurrency, formatDiscount } from '@/utils/formatCurrency';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -22,12 +22,13 @@ export default function VariantCard({ variant, showTimer = false }: VariantCardP
   const { toggle, isWishlisted } = useWishlistStore();
   const incrementCart = useCartStore((s) => s.increment);
   const wishlisted = isWishlisted(variant.id);
-  const [adding, setAdding] = useState(false);
+  const { addItem, isAdding, updatingVariantId } = useCart();
+  const adding = isAdding && updatingVariantId === variant.id;
 
   const priceNum = typeof variant.price === 'string' ? parseFloat(variant.price) : variant.price;
   const saleNum = variant.sale_price ? (typeof variant.sale_price === 'string' ? parseFloat(variant.sale_price) : variant.sale_price) : null;
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -37,16 +38,7 @@ export default function VariantCard({ variant, showTimer = false }: VariantCardP
       return;
     }
 
-    try {
-      setAdding(true);
-      await cartApi.addItem(variant.id, 1);
-      incrementCart();
-      toast.success(`${variant.product_name} added to cart! 🛒`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to add item to cart');
-    } finally {
-      setAdding(false);
-    }
+    addItem({ variantId: variant.id, quantity: 1 });
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {

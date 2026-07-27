@@ -25,10 +25,11 @@ import toast from 'react-hot-toast';
 
 import { productsApi } from '@/api/products.api';
 import { cartApi } from '@/api/cart.api';
+import { profileApi } from '@/api/profile.api';
 import { useAuthStore } from '@/store/auth.store';
-import { useCartStore } from '@/store/cart.store';
 import { useWishlistStore } from '@/store/wishlist.store';
-import type { ProductVariantDetail, ProductVariantItem } from '@/types/product.types';
+import { useCart } from '@/hooks/useCart';
+import type { ProductVariantItem } from '@/types/product.types';
 import { formatCurrency } from '@/utils/formatCurrency';
 import VariantCard from '@/components/product/VariantCard';
 import Button from '@/components/ui/Button';
@@ -41,13 +42,12 @@ export default function VariantDetailPage() {
   const variantId = Number(id);
 
   const { isLoggedIn } = useAuthStore();
-  const { increment, setItemCount } = useCartStore();
   const { toggle: toggleWishlist, isWishlisted } = useWishlistStore();
+  const { addItem, isAdding: isAddingCart } = useCart();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'usage'>('overview');
-  const [isAddingCart, setIsAddingCart] = useState<boolean>(false);
   const [isZoomOpen, setIsZoomOpen] = useState<boolean>(false);
 
   // 1. Fetch Variant Detail
@@ -138,36 +138,8 @@ export default function VariantDetailPage() {
   const isOutOfStock = variant.status !== 'active';
 
   // Handle Add to Cart
-  const handleAddToCart = async () => {
-    if (!isLoggedIn) {
-      toast.error('Please log in to add items to your cart.');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setIsAddingCart(true);
-      await cartApi.addItem(variant.id, quantity);
-
-      // Refresh cart store count
-      const res = await cartApi.getCart();
-      if (res.data?.items) {
-        const totalItems = res.data.items.reduce(
-          (acc: number, item: any) => acc + item.quantity,
-          0
-        );
-        setItemCount(totalItems);
-      } else {
-        increment();
-      }
-
-      toast.success(`Added ${quantity} ${variant.variant_name} to cart!`);
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Failed to add item to cart.';
-      toast.error(msg);
-    } finally {
-      setIsAddingCart(false);
-    }
+  const handleAddToCart = () => {
+    addItem({ variantId: variant.id, quantity });
   };
 
   // Handle Buy Now
@@ -179,6 +151,14 @@ export default function VariantDetailPage() {
     }
 
     try {
+      const addressRes = await profileApi.getAddresses();
+      const addrData = addressRes.data;
+      const addressList = Array.isArray(addrData) ? addrData : (addrData?.results || []);
+      if (addressList.length === 0) {
+        toast.error('Please add a shipping address before proceeding to checkout 📍', { duration: 4000 });
+        navigate('/account/addresses');
+        return;
+      }
       await cartApi.addItem(variant.id, quantity);
       navigate(`/checkout?variant=${variant.id}&qty=${quantity}`);
     } catch (err: any) {

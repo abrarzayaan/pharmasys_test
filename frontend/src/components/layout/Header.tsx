@@ -29,6 +29,7 @@ export default function Header() {
   const location = useLocation();
   const { user, isLoggedIn, logout } = useAuthStore();
   const itemCount = useCartStore((s) => s.itemCount);
+  const openDrawer = useCartStore((s) => s.openDrawer);
   const wishlistCount = useWishlistStore((s) => s.items.length);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,7 +85,9 @@ export default function Header() {
             <Link to="/account/orders" className="hover:text-content-primary transition-colors">Track Order</Link>
             <span>|</span>
             {isLoggedIn ? (
-              <span className="text-accent-400 font-bold">Hello, {user?.phone}</span>
+              <span className="text-accent-400 font-bold">
+                Hello, {user?.first_name ? user.first_name : user?.phone}
+              </span>
             ) : (
               <Link to="/login" className="hover:text-content-primary transition-colors">My Account</Link>
             )}
@@ -168,7 +171,7 @@ export default function Header() {
           </div>
 
           <Link
-            to="/account/wishlist"
+            to="/wishlist"
             className="relative p-2 text-content-secondary hover:text-content-primary transition-colors"
             title="Wishlist"
           >
@@ -180,9 +183,11 @@ export default function Header() {
             )}
           </Link>
 
-          <Link
-            to="/cart"
-            className="flex items-center gap-2 bg-bg-card border border-bg-border hover:border-primary-500/50 px-3 py-1.5 rounded-full text-content-primary transition-all"
+          <button
+            type="button"
+            onClick={openDrawer}
+            aria-label="Open cart drawer"
+            className="flex items-center gap-2 bg-bg-card border border-bg-border hover:border-primary-500/50 px-3 py-1.5 rounded-full text-content-primary transition-all cursor-pointer"
           >
             <div className="relative">
               <ShoppingBag className="w-4 h-4 text-primary-400" />
@@ -196,7 +201,7 @@ export default function Header() {
               <span className="text-[9px] text-content-muted font-medium">Cart</span>
               <p className="text-xs font-extrabold text-primary-400 mt-0.5">{itemCount}</p>
             </div>
-          </Link>
+          </button>
 
           {/* Theme Selector Dropdown */}
           <ThemeSelector />
@@ -208,27 +213,37 @@ export default function Header() {
                 onClick={() => setUserMenuOpen((v) => !v)}
                 className="w-8 h-8 rounded-full bg-primary-600/30 border border-primary-500/50 text-primary-300 font-bold text-xs flex items-center justify-center uppercase hover:ring-2 hover:ring-primary-500/50 transition-all"
               >
-                {user?.phone?.[0] ?? 'U'}
+                {user?.first_name ? user.first_name[0].toUpperCase() : user?.phone?.[0] ?? 'U'}
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-bg-card border border-bg-border rounded-2xl shadow-card py-2 z-50">
+                <div className="absolute right-0 mt-2 w-52 bg-bg-card border border-bg-border rounded-2xl shadow-card py-2 z-50">
                   <div className="px-3 py-2 border-b border-bg-border">
-                    <p className="text-xs font-bold text-content-primary truncate">{user?.phone}</p>
+                    <p className="text-xs font-bold text-content-primary truncate">
+                      {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Valued Customer'}
+                    </p>
+                    <p className="text-[10px] text-content-muted font-mono truncate">{user?.phone}</p>
                   </div>
+                  <Link
+                    to="/account/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-content-secondary hover:text-content-primary hover:bg-bg-surface transition-colors font-medium"
+                  >
+                    <UserIcon className="w-4 h-4 text-primary-400" /> My Profile
+                  </Link>
                   <Link
                     to="/account/orders"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-content-secondary hover:text-content-primary hover:bg-bg-surface transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-content-secondary hover:text-content-primary hover:bg-bg-surface transition-colors font-medium"
                   >
-                    <Package className="w-4 h-4" /> My Orders
+                    <Package className="w-4 h-4 text-primary-400" /> My Orders
                   </Link>
                   <Link
                     to="/account/addresses"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-content-secondary hover:text-content-primary hover:bg-bg-surface transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-content-secondary hover:text-content-primary hover:bg-bg-surface transition-colors font-medium"
                   >
-                    <MapPin className="w-4 h-4" /> Addresses
+                    <MapPin className="w-4 h-4 text-primary-400" /> Delivery Addresses
                   </Link>
                   <button
                     type="button"
@@ -236,7 +251,7 @@ export default function Header() {
                       setUserMenuOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-bg-surface transition-colors border-t border-bg-border"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-bg-surface transition-colors border-t border-bg-border font-medium"
                   >
                     <LogOut className="w-4 h-4" /> Sign Out
                   </button>

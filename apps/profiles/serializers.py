@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
 from apps.profiles.models import Address, ConsumerProfile, VendorProfile, RiderProfile
 
@@ -8,9 +9,24 @@ class AddressSerializer(serializers.ModelSerializer):
 
 
 class ConsumerProfileSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(source='user.phone_number', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True)
+    last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True)
+    email = serializers.EmailField(source='user.email', required=False, allow_blank=True)
+
     class Meta:
         model = ConsumerProfile
-        exclude = ['user', 'created_at', 'updated_at']
+        fields = ['id', 'date_of_birth', 'gender', 'profile_image', 'phone', 'first_name', 'last_name', 'email']
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+        if user_data:
+            user = instance.user
+            for attr, val in user_data.items():
+                setattr(user, attr, val)
+            user.save()
+
+        return super().update(instance, validated_data)
 
 
 class VendorProfileSerializer(serializers.ModelSerializer):

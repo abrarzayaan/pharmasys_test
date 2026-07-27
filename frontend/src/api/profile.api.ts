@@ -1,6 +1,7 @@
 import api from './axios';
 
 export const profileApi = {
+  getConsumerProfile: () => api.get('/profiles/consumer/update/'),
   updateConsumerProfile: (data: FormData) =>
     api.patch('/profiles/consumer/update/', data, {
       headers: { 'Content-Type': 'multipart/form-data' },

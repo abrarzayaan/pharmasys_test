@@ -51,13 +51,15 @@ class UserAddressDetailView(RetrieveUpdateDestroyAPIView):
 class ConsumerProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated, IsConsumer]
 
+    @extend_schema(responses=ConsumerProfileSerializer)
+    def get(self, request):
+        profile, created = ConsumerProfile.objects.get_or_create(user=request.user)
+        serializer = ConsumerProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @extend_schema(request=ConsumerProfileSerializer, responses=ConsumerProfileSerializer)
     def patch(self, request):
-        try:
-            profile = request.user.consumer_profile
-        except ConsumerProfile.DoesNotExist:
-            return Response({"error": "Consumer profile not found."}, status=status.HTTP_404_NOT_FOUND)
-        
+        profile, created = ConsumerProfile.objects.get_or_create(user=request.user)
         serializer = ConsumerProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()

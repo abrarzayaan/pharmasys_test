@@ -4,12 +4,17 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
+import CartDrawer from '@/components/cart/CartDrawer';
 
 import { useThemeStore } from '@/store/theme.store';
+import { useCart } from '@/hooks/useCart';
 
 export default function Layout() {
   const { pathname } = useLocation();
   const initTheme = useThemeStore((s) => s.initTheme);
+  
+  // Initialize cart hook to automatically fetch & sync cart count on mount
+  useCart();
 
   useEffect(() => {
     initTheme();
@@ -38,6 +43,9 @@ export default function Layout() {
       </AnimatePresence>
 
       <Footer />
+
+      {/* Cart Drawer Overlay */}
+      <CartDrawer />
 
       {/* Mobile bottom navigation */}
       <MobileNav />
