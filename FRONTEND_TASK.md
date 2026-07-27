@@ -519,21 +519,21 @@ Body: { address_id, payment_method: "COD", coupon_code?, notes? }
 ```
 
 ### Tasks
-- [ ] Checkout page layout:
+- [x] Checkout page layout:
   - Address selector (list saved + "Add New" inline)
   - Order items review
   - Coupon code input + "Apply" button → re-hits `/checkout/` with code
   - Price breakdown: subtotal, discount, tax, delivery, **grand total**
-  - Payment method selector (COD only for now)
-  - "Place Order" button → POST `/api/orders/`
-- [ ] On success → redirect to `/order-success/:orderId`
-- [ ] `OrderSuccessPage`: ✅ animation, order number, "Track Order" + "Keep Shopping" CTAs
-- [ ] Prevent double-submit (disable button + loading spinner)
+  - Payment method selector (COD active & default; bKash, Nagad, Card disabled / coming soon)
+  - "Place Order" button → POST `/api/orders/` or `/api/orders/buy-now/`
+- [x] On success → redirect to `/order-success/:orderId`
+- [x] `OrderSuccessPage`: ✅ animation, order number, "Track Order" + "Keep Shopping" CTAs
+- [x] Prevent double-submit (disable button + loading spinner)
 
 ### UX
 - Price panel sticky on desktop
 - Coupon success: green badge with discount amount
-- Confetti animation on order success page
+- Confetti/celebration hero on order success page
 
 ---
 
@@ -689,14 +689,14 @@ DELETE /api/profiles/addresses/{id}/
 | Section 04 — Product Detail | ✅ DONE | Variant details, image gallery zoom, Rx alert, quantity stepper, cart & wishlist integration |
 | Section 05 — Cart | ✅ DONE | Slide-in Cart Drawer + /cart page, items list, quantity stepper, clear cart, total calculations |
 | Section 06 — Wishlist | ✅ DONE | Persistent Zustand store + /wishlist page with parallel queries, add to cart & remove actions |
-| Section 07 — Checkout & Payment | ⬜ TODO | |
+| Section 07 — Checkout & Payment | ✅ DONE | Production-ready checkout: COD default, address selector + inline add modal, coupon discount preview, sticky order summary, Order Success celebration page |
 | Section 08 — Orders & Tracking | ⬜ TODO | |
 | Section 09 — Profile & Addresses | ✅ DONE | Account sidebar layout, Profile page (avatar upload, DOB, gender), Addresses page (full CRUD) |
 | Section 10 — Polish & SEO | ⬜ TODO | |
 
 ---
 
-> **Current:** Section 01, 02, 03, 04, 05, 06 & 09 ✅ COMPLETED.
+> **Current:** Section 01, 02, 03, 04, 05, 06, 07 & 09 ✅ COMPLETED.
 >
-> **Next Step:** Tell me **"start section 07"** to build the **Checkout & Payment Module** (`/checkout`).
+> **Next Step:** Tell me **"start section 08"** to build the **Orders & Tracking Module** (`/account/orders`).
 

@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Col 1: Help & Contact Info */}
           <div className="md:col-span-2 space-y-4">
             <h3 className="font-head font-extrabold text-xl text-primary-400">
-              +880 1700-000000
+              +880 1334-317864
             </h3>
             <div className="space-y-2 text-content-muted">
               <p className="flex items-center gap-2">

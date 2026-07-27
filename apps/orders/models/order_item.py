@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
 
 from apps.orders.models.order import Order
@@ -52,4 +53,4 @@ class OrderItem(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.order.order_number} - {self.product_variant.name}"
+        return f"{self.order.order_number} - {self.product_variant.variant_name}"

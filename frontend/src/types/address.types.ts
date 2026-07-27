@@ -30,3 +30,6 @@ export interface AddressFormData {
   postal_code?: string;
   is_default: boolean;
 }
+
+export type CreateAddressPayload = AddressFormData;
+

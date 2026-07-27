@@ -16,6 +16,9 @@ export const productsApi = {
   getVariantDetail: (id: number) =>
     api.get<ProductVariantDetail>(`/products/variants/${id}/`),
 
+  getVariant: (id: number) =>
+    api.get<ProductVariantDetail>(`/products/variants/${id}/`),
+
   getVariants: (params?: Record<string, any>) =>
     api.get<PaginatedResponse<ProductVariantItem> | ProductVariantItem[]>('/products/variants/', { params }),
 };

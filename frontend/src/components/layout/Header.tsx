@@ -166,7 +166,7 @@ export default function Header() {
             </div>
             <div className="text-left leading-tight">
               <span className="text-[9px] text-content-muted uppercase font-semibold">Need Help?</span>
-              <p className="text-xs font-extrabold text-content-primary">+880 1700-000000</p>
+              <p className="text-xs font-extrabold text-content-primary">+880 1334-317864</p>
             </div>
           </div>
 
@@ -307,11 +307,10 @@ export default function Header() {
                         <Link
                           to={`/products?category=${cat.id}`}
                           onClick={() => setCatMenuOpen(false)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors ${
-                            isHovered
-                              ? 'bg-primary-600/20 text-primary-400 font-semibold'
-                              : 'text-content-secondary hover:text-content-primary hover:bg-bg-surface'
-                          }`}
+                          className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors ${isHovered
+                            ? 'bg-primary-600/20 text-primary-400 font-semibold'
+                            : 'text-content-secondary hover:text-content-primary hover:bg-bg-surface'
+                            }`}
                         >
                           <span className="truncate">{cat.name}</span>
                           {hasChildren && <ChevronRight className="w-3.5 h-3.5 text-primary-400" />}
@@ -350,31 +349,28 @@ export default function Header() {
           <nav className="flex items-center gap-6 text-xs font-semibold">
             <Link
               to="/"
-              className={`transition-colors ${
-                isNavActive('/')
-                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              className={`transition-colors ${isNavActive('/')
+                ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                : 'text-content-secondary hover:text-content-primary'
+                }`}
             >
               Home
             </Link>
             <Link
               to="/products"
-              className={`transition-colors ${
-                isNavActive('/products')
-                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              className={`transition-colors ${isNavActive('/products')
+                ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                : 'text-content-secondary hover:text-content-primary'
+                }`}
             >
               Shop All
             </Link>
             <Link
               to="/products?filter=hot_deals"
-              className={`flex items-center gap-1 transition-colors ${
-                isNavActive('/products', 'hot_deals')
-                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              className={`flex items-center gap-1 transition-colors ${isNavActive('/products', 'hot_deals')
+                ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                : 'text-content-secondary hover:text-content-primary'
+                }`}
             >
               Hot Deals
               <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold flex items-center gap-0.5 animate-pulse">
@@ -383,11 +379,10 @@ export default function Header() {
             </Link>
             <Link
               to="/products?filter=best_selling"
-              className={`flex items-center gap-1 transition-colors ${
-                isNavActive('/products', 'best_selling')
-                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              className={`flex items-center gap-1 transition-colors ${isNavActive('/products', 'best_selling')
+                ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                : 'text-content-secondary hover:text-content-primary'
+                }`}
             >
               Top Deals
               <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[9px] font-bold">
@@ -396,11 +391,10 @@ export default function Header() {
             </Link>
             <Link
               to="/products?filter=top_rated"
-              className={`transition-colors ${
-                isNavActive('/products', 'top_rated')
-                  ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
-                  : 'text-content-secondary hover:text-content-primary'
-              }`}
+              className={`transition-colors ${isNavActive('/products', 'top_rated')
+                ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
+                : 'text-content-secondary hover:text-content-primary'
+                }`}
             >
               Top Rated
             </Link>
@@ -431,27 +425,24 @@ export default function Header() {
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors ${
-                isNavActive('/') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
-              }`}
+              className={`px-3 py-2 rounded-xl transition-colors ${isNavActive('/') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+                }`}
             >
               Home Page
             </Link>
             <Link
               to="/products"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors ${
-                isNavActive('/products') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
-              }`}
+              className={`px-3 py-2 rounded-xl transition-colors ${isNavActive('/products') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+                }`}
             >
               Shop All Products
             </Link>
             <Link
               to="/products?filter=hot_deals"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
-                isNavActive('/products', 'hot_deals') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
-              }`}
+              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${isNavActive('/products', 'hot_deals') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+                }`}
             >
               <span>Hot Deals</span>
               <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold flex items-center gap-1">
@@ -461,9 +452,8 @@ export default function Header() {
             <Link
               to="/products?filter=best_selling"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
-                isNavActive('/products', 'best_selling') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
-              }`}
+              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${isNavActive('/products', 'best_selling') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+                }`}
             >
               <span>Top Deals (Best Selling)</span>
               <span className="px-2 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[10px] font-bold">
@@ -473,9 +463,8 @@ export default function Header() {
             <Link
               to="/products?filter=top_rated"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors ${
-                isNavActive('/products', 'top_rated') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
-              }`}
+              className={`px-3 py-2 rounded-xl transition-colors ${isNavActive('/products', 'top_rated') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+                }`}
             >
               Top Rated Products
             </Link>
