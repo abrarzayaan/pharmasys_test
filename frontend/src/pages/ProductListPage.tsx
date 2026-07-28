@@ -113,15 +113,13 @@ export default function ProductListPage() {
   const filteredVariants = useMemo(() => {
     let result = [...rawVariants];
 
-    // Meta filter (best_selling, hot_deals, top_rated)
+    // Meta filter (best_selling, hot_deals, quick_access)
     if (currentFilter === 'best_selling') {
       result = result.filter((item) => (item as any).meta?.is_best_selling === true);
     } else if (currentFilter === 'hot_deals') {
       result = result.filter((item) => (item as any).meta?.is_hot_deal === true);
-    } else if (currentFilter === 'top_rated') {
-      result = result.filter(
-        (item) => (item as any).meta?.is_top_rated === true || (item as any).meta?.is_featured === true
-      );
+    } else if (currentFilter === 'quick_access') {
+      result = result.filter((item) => (item as any).meta?.is_quick_access === true);
     }
 
     // Category Filter (if parent category set and no specific subcategory selected)
@@ -222,7 +220,7 @@ export default function ProductListPage() {
   const filterTitleMap: Record<string, string> = {
     best_selling: '🔥 Best Selling Products',
     hot_deals: '⚡ Hot Deals & Offers',
-    top_rated: '⭐ Top Rated Products',
+    quick_access: '🚀 Quick Access Essentials',
   };
   const activeTitle = currentFilter
     ? filterTitleMap[currentFilter] || 'Promotional Products'

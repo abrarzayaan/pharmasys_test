@@ -96,6 +96,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         meta.setdefault('pack_size', '')
         meta.setdefault('color', '')
         meta.setdefault('size', '')
+        meta.setdefault('is_quick_access', False)
+        meta.setdefault('is_hot_deal', False)
+        meta.setdefault('is_best_selling', False)
         attrs['meta'] = meta
 
         return attrs
