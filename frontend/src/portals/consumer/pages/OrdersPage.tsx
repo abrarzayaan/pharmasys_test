@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ordersApi } from '@/api/orders.api';
-import AccountSidebar from '@/components/account/AccountSidebar';
+import AccountSidebar from '@/portals/consumer/components/account/AccountSidebar';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
 import type { Order, OrderStatus } from '@/types/order.types';

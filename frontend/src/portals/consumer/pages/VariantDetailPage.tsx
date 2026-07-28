@@ -31,7 +31,7 @@ import { useWishlistStore } from '@/store/wishlist.store';
 import { useCart } from '@/hooks/useCart';
 import type { ProductVariantItem } from '@/types/product.types';
 import { formatCurrency } from '@/utils/formatCurrency';
-import VariantCard from '@/components/product/VariantCard';
+import VariantCard from '@/portals/consumer/components/product/VariantCard';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
@@ -159,7 +159,6 @@ export default function VariantDetailPage() {
         navigate('/account/addresses');
         return;
       }
-      await cartApi.addItem(variant.id, quantity);
       navigate(`/checkout?variant=${variant.id}&qty=${quantity}`);
     } catch (err: any) {
       toast.error('Could not process immediate buy. Please try again.');

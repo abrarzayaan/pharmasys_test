@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
 from apps.cart.services import CartService
 
@@ -24,18 +25,7 @@ class AddToCartSerializer(serializers.Serializer):
                 "product_variant_id": "Product variant not found."
             })
 
-        # Inventory Check
-        try:
-            inventory = CartService.get_inventory(variant)
-        except Inventory.DoesNotExist:
-            raise serializers.ValidationError({
-                "product_variant_id": "Inventory not found."
-            })
-
-        if inventory.available_stock < quantity:
-            raise serializers.ValidationError({
-                "quantity": f"Only {inventory.available_stock} item(s) available."
-            })
+        inventory = CartService.get_inventory(variant)
 
         # Min Qty
         if quantity < variant.min_order_qty:
@@ -92,13 +82,6 @@ class AddToCartSerializer(serializers.Serializer):
                     "quantity": f"Maximum order quantity is {variant.max_order_qty}."
                 })
 
-            inventory = self.validated_data["inventory"]
-
-            if new_quantity > inventory.available_stock:
-                raise serializers.ValidationError({
-                    "quantity": f"Only {inventory.available_stock} item(s) available."
-                })
-
             cart_item.quantity = new_quantity
             cart_item.save(update_fields=["quantity", "updated_at"])
 
@@ -111,20 +94,7 @@ class UpdateCartItemSerializer(serializers.Serializer):
     def validate(self, attrs):
         cart_item = self.context["cart_item"]
         quantity = attrs["quantity"]
-
         variant = cart_item.product_variant
-
-        try:
-            inventory = CartService.get_inventory(variant)
-        except Inventory.DoesNotExist:
-            raise serializers.ValidationError(
-                "Inventory not found."
-            )
-
-        if quantity > inventory.available_stock:
-            raise serializers.ValidationError({
-                "quantity": f"Only {inventory.available_stock} item(s) available."
-            })
 
         if quantity < variant.min_order_qty:
             raise serializers.ValidationError({

@@ -1,13 +1,19 @@
+# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework import status
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
 
 from apps.profiles.models import ConsumerProfile, VendorProfile, RiderProfile
 from apps.profiles.serializers import ConsumerProfileSerializer, VendorProfileSerializer, RiderProfileSerializer
 from apps.profiles.permissions import IsConsumer, IsVendor, IsRider
 
+# pyrefly: ignore [missing-import]
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from apps.profiles.models import Address
 from apps.profiles.serializers import AddressSerializer
@@ -41,10 +47,20 @@ class UserAddressDetailView(RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)
 
-    def perform_destroy(self, instance):
-        # প্রোডাকশন স্ট্যান্ডার্ড অনুযায়ী আমরা ডাটাবেজ থেকে অ্যাড্রেস পার্মানেন্টলি ডিলিট না করে status hidden করে দেব
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        was_default = instance.is_default
         instance.status = 'hidden'
-        instance.save()
+        instance.is_default = False
+        instance.save(update_fields=['status', 'is_default', 'updated_at'])
+
+        if was_default:
+            next_addr = Address.objects.filter(user=request.user, status='active').first()
+            if next_addr:
+                next_addr.is_default = True
+                next_addr.save(update_fields=['is_default', 'updated_at'])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 

@@ -20,7 +20,7 @@ import {
 import toast from 'react-hot-toast';
 import { profileApi } from '@/api/profile.api';
 import type { Address, AddressFormData, AddressLabel } from '@/types/address.types';
-import AccountSidebar from '@/components/account/AccountSidebar';
+import AccountSidebar from '@/portals/consumer/components/account/AccountSidebar';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -49,6 +49,7 @@ export default function AddressesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [deletingAddress, setDeletingAddress] = useState<Address | null>(null);
   const [formData, setFormData] = useState<AddressFormData>(INITIAL_FORM);
 
   // 1. Fetch Addresses
@@ -97,6 +98,7 @@ export default function AddressesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       toast.success('Address removed.');
+      setDeletingAddress(null);
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || 'Failed to delete address.';
@@ -272,11 +274,7 @@ export default function AddressesPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to remove this address?')) {
-                            deleteMutation.mutate(addr.id);
-                          }
-                        }}
+                        onClick={() => setDeletingAddress(addr)}
                         className="p-2 rounded-xl text-content-secondary hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         title="Delete address"
                       >
@@ -504,6 +502,55 @@ export default function AddressesPage() {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      <AnimatePresence>
+        {deletingAddress && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeletingAddress(null)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-sm bg-bg-card border border-bg-border rounded-3xl shadow-2xl p-6 z-10 text-center space-y-4"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-head font-bold text-base text-content-primary">Delete Address?</h4>
+                <p className="text-xs text-content-secondary">
+                  Are you sure you want to remove <strong>"{deletingAddress.full_address}"</strong>?
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <Button
+                  onClick={() => setDeletingAddress(null)}
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full px-5 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => deleteMutation.mutate(deletingAddress.id)}
+                  loading={deleteMutation.isPending}
+                  variant="primary"
+                  size="sm"
+                  className="rounded-full px-5 text-xs bg-red-600 hover:bg-red-500 border-none font-bold"
+                >
+                  Yes, Remove
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}

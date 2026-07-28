@@ -14,7 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import { profileApi } from '@/api/profile.api';
 import { useAuthStore } from '@/store/auth.store';
-import AccountSidebar from '@/components/account/AccountSidebar';
+import AccountSidebar from '@/portals/consumer/components/account/AccountSidebar';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
 

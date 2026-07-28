@@ -4,8 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
-import CartDrawer from '@/components/cart/CartDrawer';
-import CategoryModal from '@/components/product/CategoryModal';
+import CartDrawer from '@/portals/consumer/components/cart/CartDrawer';
+import CategoryModal from '@/portals/consumer/components/product/CategoryModal';
 
 import { useThemeStore } from '@/store/theme.store';
 import { useCart } from '@/hooks/useCart';

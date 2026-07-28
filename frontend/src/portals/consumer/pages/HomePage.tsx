@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { productsApi } from '@/api/products.api';
 import type { Category, ProductVariantItem, Brand } from '@/types/product.types';
-import VariantCard from '@/components/product/VariantCard';
+import VariantCard from '@/portals/consumer/components/product/VariantCard';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
 import { useCategoryModalStore } from '@/store/categoryModal.store';

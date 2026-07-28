@@ -48,15 +48,15 @@ export default function CategoryModal() {
   const activeCatId = selectedCatId ?? (categories.length > 0 ? categories[0].id : null);
 
   // Filter categories based on search input
-  const filteredCategories = categories.filter((cat) => {
+  const filteredCategories = categories.filter((cat: Category) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     const catMatches = cat.name.toLowerCase().includes(query);
-    const subMatches = cat.children?.some((sub) => sub.name.toLowerCase().includes(query));
+    const subMatches = cat.children?.some((sub: Subcategory) => sub.name.toLowerCase().includes(query));
     return catMatches || subMatches;
   });
 
-  const activeCategory = categories.find((c) => c.id === activeCatId) || filteredCategories[0] || categories[0];
+  const activeCategory = categories.find((c: Category) => c.id === activeCatId) || filteredCategories[0] || categories[0];
 
   const handleSelectCategory = (catId: number, subId?: number) => {
     closeModal();
@@ -156,7 +156,7 @@ export default function CategoryModal() {
                   ))}
                 </div>
               ) : (
-                filteredCategories.map((cat, idx) => {
+                filteredCategories.map((cat: Category, idx: number) => {
                   const IconComp = defaultIcons[idx % defaultIcons.length];
                   const isSelected = activeCategory?.id === cat.id;
                   const subCount = cat.children?.length || 0;

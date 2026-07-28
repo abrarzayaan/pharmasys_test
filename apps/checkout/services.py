@@ -44,12 +44,6 @@ class CheckoutService:
                 ],
             ).order_by("-stock_qty").first()
         )
-        if not inventory or inventory.available_stock < quantity:
-            available_stock = inventory.available_stock if inventory else 0
-            raise ValidationError({
-                "quantity": f"Only {available_stock} item(s) available."
-            })
-
         return {
             "variant": variant,
             "quantity": quantity,
@@ -105,39 +99,8 @@ class CheckoutService:
     @staticmethod
     def validate_stock(cart):
         """
-        Validate inventory stock.
+        Validate inventory stock (non-blocking for consumer checkout).
         """
-
-        for item in cart.items.select_related(
-            "product_variant",
-            "product_variant__product",
-        ):
-
-            variant = item.product_variant
-
-            inventory = (
-                Inventory.objects
-                .filter(
-                    variant=variant,
-                    status__in=[
-                        InventoryStatusChoices.IN_STOCK,
-                        InventoryStatusChoices.LOW_STOCK,
-                    ],
-                )
-                .order_by("-stock_qty")
-                .first()
-            )
-
-            if not inventory:
-                raise ValidationError(
-                    f"{variant.product.name} is currently unavailable."
-                )
-
-            if inventory.available_stock < item.quantity:
-                raise ValidationError(
-                    f"Only {inventory.available_stock} item(s) available for "
-                    f"{variant.product.name} ({variant.variant_name})."
-                )
         return True
             
     @staticmethod
