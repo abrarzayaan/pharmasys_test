@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   Pill,
   Check,
+  Grid,
+  Sparkles,
 } from 'lucide-react';
 import { productsApi } from '@/api/products.api';
 import type { Category, Brand, ProductVariantItem } from '@/types/product.types';
@@ -16,6 +18,7 @@ import VariantCard from '@/components/product/VariantCard';
 import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
 import Badge from '@/components/ui/Badge';
+import { useCategoryModalStore } from '@/store/categoryModal.store';
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +39,7 @@ export default function ProductListPage() {
   const [rxOnlyFilter, setRxOnlyFilter] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'name'>('price_asc');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const openCategoryModal = useCategoryModalStore((s) => s.openModal);
   const [expandedCatId, setExpandedCatId] = useState<number | null>(
     currentCategory ? parseInt(currentCategory) : null
   );
@@ -238,6 +242,122 @@ export default function ProductListPage() {
         <p className="text-content-secondary text-xs sm:text-sm">
           Browse authentic medicines, health supplements, and verified pharmaceutical SKUs.
         </p>
+      </div>
+
+      {/* ── MOBILE & DESKTOP QUICK CATEGORIES & SUBCATEGORIES STRIP ── */}
+      <div className="space-y-3 bg-bg-card border border-bg-border rounded-3xl p-3.5 sm:p-5 shadow-card">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-content-muted flex items-center gap-1.5">
+            <Grid className="w-3.5 h-3.5 text-primary-400" />
+            Quick Categories Navigation
+          </span>
+          <button
+            type="button"
+            onClick={openCategoryModal}
+            className="text-[11px] font-bold text-primary-400 hover:underline flex items-center gap-1"
+          >
+            Full Categories Tree <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Category Filter Chips Bar - Horizontal Touch Scroll */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar flex-nowrap">
+          <button
+            type="button"
+            onClick={() => {
+              setExpandedCatId(null);
+              setSelectedSubcategoryId(null);
+              removeFilterParam('category');
+              removeFilterParam('subcategory');
+            }}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
+              !expandedCatId && !selectedSubcategoryId
+                ? 'bg-primary-600 text-white shadow-glow'
+                : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary'
+            }`}
+          >
+            All Products
+          </button>
+
+          {categories.map((cat: any) => {
+            const isSelected = expandedCatId === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  if (isSelected) {
+                    setExpandedCatId(null);
+                    setSelectedSubcategoryId(null);
+                    removeFilterParam('category');
+                    removeFilterParam('subcategory');
+                  } else {
+                    setExpandedCatId(cat.id);
+                    setSelectedSubcategoryId(null);
+                    setSearchParams({ category: cat.id.toString() });
+                  }
+                }}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-primary-600 text-white shadow-glow'
+                    : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary hover:border-primary-500/40'
+                }`}
+              >
+                <span>{cat.name}</span>
+                {cat.children?.length > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-bg-card text-content-muted'
+                    }`}
+                  >
+                    {cat.children.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Subcategory Secondary Pills Bar (Displayed when a Category is Active) */}
+        {expandedCatId && (
+          <div className="pt-2.5 border-t border-bg-border/60 flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar flex-nowrap animate-in fade-in duration-200">
+            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider shrink-0 mr-1">
+              Subcategories:
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedSubcategoryId(null)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shrink-0 ${
+                !selectedSubcategoryId
+                  ? 'bg-primary-600/30 border border-primary-500/40 text-primary-300 font-bold'
+                  : 'bg-bg-surface text-content-muted hover:text-content-secondary'
+              }`}
+            >
+              All in {categories.find((c: any) => c.id === expandedCatId)?.name}
+            </button>
+
+            {categories
+              .find((c: any) => c.id === expandedCatId)
+              ?.children?.map((sub: any) => {
+                const isSelected = selectedSubcategoryId === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-primary-600 text-white font-bold shadow-sm'
+                        : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary'
+                    }`}
+                  >
+                    <span>{sub.name}</span>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </button>
+                );
+              })}
+          </div>
+        )}
       </div>
 
       {/* ── MAIN LAYOUT: SIDEBAR + PRODUCT GRID ── */}
@@ -453,10 +573,10 @@ export default function ProductListPage() {
             </div>
           )}
 
-          {/* Responsive Cards Grid (Compact 2-col to 4-col matching Homepage) */}
+          {/* Product Grid */}
           {variantsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
+              {Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton key={i} className="h-64 rounded-2xl" />
               ))}
             </div>
@@ -474,7 +594,7 @@ export default function ProductListPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
               {filteredVariants.map((variant) => (
                 <VariantCard key={variant.id} variant={variant} />
               ))}

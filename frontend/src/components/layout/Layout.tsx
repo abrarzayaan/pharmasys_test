@@ -5,6 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
 import CartDrawer from '@/components/cart/CartDrawer';
+import CategoryModal from '@/components/product/CategoryModal';
 
 import { useThemeStore } from '@/store/theme.store';
 import { useCart } from '@/hooks/useCart';
@@ -46,6 +47,9 @@ export default function Layout() {
 
       {/* Cart Drawer Overlay */}
       <CartDrawer />
+
+      {/* Global Category Modal Overlay */}
+      <CategoryModal />
 
       {/* Mobile bottom navigation */}
       <MobileNav />

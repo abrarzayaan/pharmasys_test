@@ -19,6 +19,7 @@ import {
 import { useAuthStore } from '@/store/auth.store';
 import { useCartStore } from '@/store/cart.store';
 import { useWishlistStore } from '@/store/wishlist.store';
+import { useCategoryModalStore } from '@/store/categoryModal.store';
 import { useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/api/products.api';
 import type { Category } from '@/types/product.types';
@@ -31,6 +32,7 @@ export default function Header() {
   const itemCount = useCartStore((s) => s.itemCount);
   const openDrawer = useCartStore((s) => s.openDrawer);
   const wishlistCount = useWishlistStore((s) => s.items.length);
+  const openCategoryModal = useCategoryModalStore((s) => s.openModal);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
@@ -38,6 +40,7 @@ export default function Header() {
   const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [activeHoverCat, setActiveHoverCat] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCatExpanded, setMobileCatExpanded] = useState<number | null>(null);
 
   // Active navigation helper
   const isNavActive = (path: string, filterParam?: string) => {
@@ -404,7 +407,8 @@ export default function Header() {
 
       {/* ── MOBILE MENU DRAWER ── */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-bg-card border-t border-bg-border px-4 py-4 space-y-4 shadow-card">
+        <div className="md:hidden bg-bg-card border-t border-bg-border px-4 py-4 space-y-4 shadow-card max-h-[80vh] overflow-y-auto custom-scrollbar">
+          {/* Mobile Search Bar */}
           <form onSubmit={handleSearch} className="flex items-center bg-bg-surface border border-bg-border rounded-full p-1">
             <input
               type="text"
@@ -420,6 +424,76 @@ export default function Header() {
               <Search className="w-3.5 h-3.5" />
             </button>
           </form>
+
+          {/* Dedicated Shop by Categories Mobile Accordion / Drawer Section */}
+          <div className="space-y-2 pt-1 border-b border-bg-border pb-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary-400" />
+                Shop By Categories
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  useCategoryModalStore.getState().openModal();
+                }}
+                className="text-[11px] font-bold text-primary-400 hover:underline"
+              >
+                View Dual View
+              </button>
+            </div>
+
+            {/* Collapsible Mobile Category List */}
+            <div className="space-y-1">
+              {categories.map((cat: any) => {
+                const isExpanded = mobileCatExpanded === cat.id;
+                const hasChildren = cat.children && cat.children.length > 0;
+                return (
+                  <div key={cat.id} className="rounded-xl border border-bg-border/60 bg-bg-surface/40 overflow-hidden">
+                    <div className="flex items-center justify-between p-2 px-3">
+                      <Link
+                        to={`/products?category=${cat.id}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="text-xs font-semibold text-content-primary hover:text-primary-400 truncate flex-1"
+                      >
+                        {cat.name}
+                      </Link>
+
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          onClick={() => setMobileCatExpanded(isExpanded ? null : cat.id)}
+                          className="p-1 text-content-muted hover:text-content-primary transition-transform"
+                        >
+                          <ChevronRight
+                            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90 text-primary-400' : ''}`}
+                          />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Nested Subcategories for Mobile */}
+                    {isExpanded && hasChildren && (
+                      <div className="bg-bg-card/70 border-t border-bg-border/60 p-2 pl-4 space-y-1">
+                        {cat.children.map((sub: any) => (
+                          <Link
+                            key={sub.id}
+                            to={`/products?subcategory=${sub.id}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block py-1 px-2 text-xs text-content-secondary hover:text-primary-400 hover:bg-bg-surface rounded-lg transition-colors flex items-center justify-between"
+                          >
+                            <span>{sub.name}</span>
+                            <ChevronRight className="w-3 h-3 text-content-muted" />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <nav className="flex flex-col space-y-1 text-xs font-semibold">
             <Link
