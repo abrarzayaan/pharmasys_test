@@ -708,7 +708,19 @@ export default function ProductListPage() {
                               <button
                                 key={sub.id}
                                 type="button"
-                                onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedSubcategoryId(null);
+                                    removeFilterParam('subcategory');
+                                  } else {
+                                    setSelectedSubcategoryId(sub.id);
+                                    setSearchParams({
+                                      category: cat.id.toString(),
+                                      subcategory: sub.id.toString(),
+                                    });
+                                  }
+                                  setMobileFilterOpen(false);
+                                }}
                                 className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
                                   isSelected
                                     ? 'bg-primary-600/30 text-primary-300 font-bold'
@@ -741,7 +753,10 @@ export default function ProductListPage() {
                       <button
                         key={b.id}
                         type="button"
-                        onClick={() => setSelectedBrandId(isSelected ? null : b.id)}
+                        onClick={() => {
+                          setSelectedBrandId(isSelected ? null : b.id);
+                          setMobileFilterOpen(false);
+                        }}
                         className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
                           isSelected
                             ? 'bg-primary-600/20 text-primary-400 font-bold border border-primary-500/40'
@@ -766,7 +781,10 @@ export default function ProductListPage() {
                 <input
                   type="checkbox"
                   checked={rxOnlyFilter}
-                  onChange={(e) => setRxOnlyFilter(e.target.checked)}
+                  onChange={(e) => {
+                    setRxOnlyFilter(e.target.checked);
+                    setMobileFilterOpen(false);
+                  }}
                   className="w-4 h-4 rounded border-bg-border text-primary-600 focus:ring-primary-500 bg-bg-surface"
                 />
               </label>
@@ -778,10 +796,13 @@ export default function ProductListPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={clearFilters}
+                  onClick={() => {
+                    clearFilters();
+                    setMobileFilterOpen(false);
+                  }}
                   className="flex-1 rounded-full text-xs font-bold"
                 >
-                  Reset
+                  Reset All
                 </Button>
               )}
               <Button
@@ -790,7 +811,7 @@ export default function ProductListPage() {
                 onClick={() => setMobileFilterOpen(false)}
                 className="flex-1 rounded-full text-xs font-bold py-2.5"
               >
-                Show {filteredVariants.length} Items
+                View ({filteredVariants.length} Items)
               </Button>
             </div>
           </div>
