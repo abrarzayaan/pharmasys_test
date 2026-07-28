@@ -10,7 +10,7 @@ import {
   Pill,
   Check,
   Grid,
-  Sparkles,
+  Layers,
 } from 'lucide-react';
 import { productsApi } from '@/api/products.api';
 import type { Category, Brand, ProductVariantItem } from '@/types/product.types';
@@ -178,6 +178,7 @@ export default function ProductListPage() {
     selectedSubcategoryId,
     rxOnlyFilter,
     sortBy,
+    categories,
   ]);
 
   const clearFilters = () => {
@@ -204,7 +205,8 @@ export default function ProductListPage() {
     rxOnlyFilter;
 
   // Active Category & Subcategory Name
-  const activeCategoryName = categories.find((c: any) => c.id === expandedCatId)?.name;
+  const activeCategory = categories.find((c: any) => c.id === expandedCatId);
+  const activeCategoryName = activeCategory?.name;
   const activeSubcategoryName = useMemo(() => {
     if (!selectedSubcategoryId) return null;
     for (const cat of categories) {
@@ -216,70 +218,124 @@ export default function ProductListPage() {
     return null;
   }, [categories, selectedSubcategoryId]);
 
-  // Dynamic Page Header Title
+  // Page Title
   const filterTitleMap: Record<string, string> = {
     best_selling: '🔥 Best Selling Products',
     hot_deals: '⚡ Hot Deals & Offers',
-    top_rated: '⭐ Top Rated & Featured Products',
+    top_rated: '⭐ Top Rated Products',
   };
   const activeTitle = currentFilter
     ? filterTitleMap[currentFilter] || 'Promotional Products'
     : activeSubcategoryName
-    ? `${activeSubcategoryName}`
+    ? activeSubcategoryName
     : activeCategoryName
-    ? `${activeCategoryName} Catalog`
+    ? activeCategoryName
     : searchInput
-    ? `Search Results for "${searchInput}"`
-    : 'Pharmacy Product Catalog';
+    ? `Search "${searchInput}"`
+    : 'All Products Catalog';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 py-6 pb-16">
-      {/* ── CLEAN BANNER HEADER ── */}
-      <div className="bg-bg-card border border-bg-border rounded-3xl p-6 sm:p-8 space-y-2 shadow-card">
-        <h1 className="font-head font-extrabold text-2xl sm:text-3xl text-content-primary">
-          {activeTitle}
-        </h1>
-        <p className="text-content-secondary text-xs sm:text-sm">
-          Browse authentic medicines, health supplements, and verified pharmaceutical SKUs.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 py-4 pb-20">
+      {/* ── NATIVE MOBILE APP COMPACT HEADER ── */}
+      <div className="bg-bg-card border border-bg-border rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-card">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="font-head font-extrabold text-base sm:text-xl text-content-primary">
+              {activeTitle}
+            </h1>
+            <span className="px-2 py-0.5 rounded-full bg-primary-600/15 border border-primary-500/30 text-primary-400 text-[11px] font-mono font-bold">
+              {filteredVariants.length} items
+            </span>
+          </div>
 
-      {/* ── MOBILE & DESKTOP QUICK CATEGORIES & SUBCATEGORIES STRIP ── */}
-      <div className="space-y-3 bg-bg-card border border-bg-border rounded-3xl p-3.5 sm:p-5 shadow-card">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-content-muted flex items-center gap-1.5">
-            <Grid className="w-3.5 h-3.5 text-primary-400" />
-            Quick Categories Navigation
-          </span>
+          {/* Quick Dual-Pane Category Modal Trigger */}
           <button
             type="button"
             onClick={openCategoryModal}
-            className="text-[11px] font-bold text-primary-400 hover:underline flex items-center gap-1"
+            className="sm:hidden p-1.5 rounded-xl bg-bg-surface border border-bg-border text-primary-400 hover:bg-bg-border transition-colors flex items-center gap-1 text-[11px] font-bold"
           >
-            Full Categories Tree <ChevronRight className="w-3.5 h-3.5" />
+            <Grid className="w-3.5 h-3.5" />
+            <span>Categories</span>
           </button>
         </div>
 
-        {/* Category Filter Chips Bar - Horizontal Touch Scroll */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar flex-nowrap">
-          <button
-            type="button"
-            onClick={() => {
-              setExpandedCatId(null);
-              setSelectedSubcategoryId(null);
-              removeFilterParam('category');
-              removeFilterParam('subcategory');
-            }}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
-              !expandedCatId && !selectedSubcategoryId
-                ? 'bg-primary-600 text-white shadow-glow'
-                : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary'
-            }`}
-          >
-            All Products
-          </button>
+        {/* Desktop Category Trigger */}
+        <button
+          type="button"
+          onClick={openCategoryModal}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-bg-surface border border-bg-border text-xs font-bold text-content-secondary hover:text-primary-400 transition-all shrink-0"
+        >
+          <Grid className="w-3.5 h-3.5 text-primary-400" />
+          <span>Full Category Tree</span>
+        </button>
+      </div>
 
-          {categories.map((cat: any) => {
+      {/* ── SINGLE CLEAN HORIZONTAL CATEGORY / SUBCATEGORY SCROLL STRIP ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar flex-nowrap">
+        {/* All Products Pill */}
+        <button
+          type="button"
+          onClick={clearFilters}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+            !expandedCatId && !selectedSubcategoryId
+              ? 'bg-primary-600 text-white shadow-glow'
+              : 'bg-bg-card border border-bg-border text-content-secondary hover:text-content-primary'
+          }`}
+        >
+          All
+        </button>
+
+        {/* If a parent Category is selected: Show its Subcategories */}
+        {activeCategory && activeCategory.children && activeCategory.children.length > 0 ? (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSubcategoryId(null);
+                setSearchParams({ category: activeCategory.id.toString() });
+              }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+                !selectedSubcategoryId
+                  ? 'bg-primary-600/30 border border-primary-500/40 text-primary-300'
+                  : 'bg-bg-card border border-bg-border text-content-secondary'
+              }`}
+            >
+              All {activeCategory.name}
+            </button>
+
+            {activeCategory.children.map((sub: any) => {
+              const isSelected = selectedSubcategoryId === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedSubcategoryId(null);
+                      setSearchParams({ category: activeCategory.id.toString() });
+                    } else {
+                      setSelectedSubcategoryId(sub.id);
+                      setSearchParams({
+                        category: activeCategory.id.toString(),
+                        subcategory: sub.id.toString(),
+                      });
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-primary-600 text-white font-bold shadow-glow'
+                      : 'bg-bg-card border border-bg-border text-content-secondary hover:text-content-primary'
+                  }`}
+                >
+                  <span>{sub.name}</span>
+                  {isSelected && <Check className="w-3 h-3 text-white" />}
+                </button>
+              );
+            })}
+          </>
+        ) : (
+          /* If No Category is selected: Show Main Categories */
+          categories.map((cat: any) => {
             const isSelected = expandedCatId === cat.id;
             return (
               <button
@@ -290,84 +346,33 @@ export default function ProductListPage() {
                     setExpandedCatId(null);
                     setSelectedSubcategoryId(null);
                     removeFilterParam('category');
-                    removeFilterParam('subcategory');
                   } else {
                     setExpandedCatId(cat.id);
                     setSelectedSubcategoryId(null);
                     setSearchParams({ category: cat.id.toString() });
                   }
                 }}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
                   isSelected
                     ? 'bg-primary-600 text-white shadow-glow'
-                    : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary hover:border-primary-500/40'
+                    : 'bg-bg-card border border-bg-border text-content-secondary hover:text-content-primary'
                 }`}
               >
-                <span>{cat.name}</span>
-                {cat.children?.length > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-bg-card text-content-muted'
-                    }`}
-                  >
-                    {cat.children.length}
-                  </span>
-                )}
+                {cat.name}
               </button>
             );
-          })}
-        </div>
-
-        {/* Subcategory Secondary Pills Bar (Displayed when a Category is Active) */}
-        {expandedCatId && (
-          <div className="pt-2.5 border-t border-bg-border/60 flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar flex-nowrap animate-in fade-in duration-200">
-            <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider shrink-0 mr-1">
-              Subcategories:
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedSubcategoryId(null)}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shrink-0 ${
-                !selectedSubcategoryId
-                  ? 'bg-primary-600/30 border border-primary-500/40 text-primary-300 font-bold'
-                  : 'bg-bg-surface text-content-muted hover:text-content-secondary'
-              }`}
-            >
-              All in {categories.find((c: any) => c.id === expandedCatId)?.name}
-            </button>
-
-            {categories
-              .find((c: any) => c.id === expandedCatId)
-              ?.children?.map((sub: any) => {
-                const isSelected = selectedSubcategoryId === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shrink-0 flex items-center gap-1 ${
-                      isSelected
-                        ? 'bg-primary-600 text-white font-bold shadow-sm'
-                        : 'bg-bg-surface border border-bg-border text-content-secondary hover:text-content-primary'
-                    }`}
-                  >
-                    <span>{sub.name}</span>
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </button>
-                );
-              })}
-          </div>
+          })
         )}
       </div>
 
-      {/* ── MAIN LAYOUT: SIDEBAR + PRODUCT GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ── CONTROLS & PRODUCT CATALOG ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* ── DESKTOP FILTER SIDEBAR ── */}
-        <aside className="hidden lg:block lg:col-span-3 space-y-6 bg-bg-card border border-bg-border rounded-3xl p-5 shadow-card sticky top-24">
-          <div className="flex items-center justify-between pb-3 border-b border-bg-border">
-            <h3 className="font-head font-bold text-sm text-content-primary flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-primary-400" />
-              Filters
+        <aside className="hidden lg:block lg:col-span-3 space-y-5 bg-bg-card border border-bg-border rounded-2xl p-4 shadow-card sticky top-24">
+          <div className="flex items-center justify-between pb-2.5 border-b border-bg-border">
+            <h3 className="font-head font-bold text-xs uppercase tracking-wider text-content-primary flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-primary-400" />
+              Filter Catalog
             </h3>
             {hasActiveFilters && (
               <button
@@ -380,81 +385,93 @@ export default function ProductListPage() {
             )}
           </div>
 
-          {/* Categories & Subcategories Accordion with Arrows */}
-          <div className="space-y-3">
+          {/* Categories Accordion */}
+          <div className="space-y-2">
             <h4 className="font-head font-semibold text-[11px] text-content-muted uppercase tracking-wider">
               Categories
             </h4>
-
-            {catLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 rounded-xl" />
-                <Skeleton className="h-8 rounded-xl" />
-              </div>
-            ) : (
-              <div className="space-y-1 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
-                {categories.map((cat: any) => {
-                  const isExpanded = expandedCatId === cat.id;
-                  const hasSub = cat.children && cat.children.length > 0;
-                  return (
-                    <div key={cat.id} className="space-y-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setExpandedCatId(isExpanded ? null : cat.id);
+            <div className="space-y-1 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              {categories.map((cat: any) => {
+                const isExpanded = expandedCatId === cat.id;
+                const hasSub = cat.children && cat.children.length > 0;
+                return (
+                  <div key={cat.id} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isExpanded) {
+                          setExpandedCatId(null);
                           setSelectedSubcategoryId(null);
-                        }}
-                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-colors text-left ${
-                          isExpanded
-                            ? 'bg-primary-600/20 text-primary-400'
-                            : 'text-content-secondary hover:bg-bg-surface hover:text-content-primary'
-                        }`}
-                      >
-                        <span className="truncate">{cat.name}</span>
-                        {hasSub && (
-                          <ChevronRight
-                            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90 text-primary-400' : 'text-content-muted'}`}
-                          />
-                        )}
-                      </button>
-
-                      {/* Subcategories */}
-                      {isExpanded && hasSub && (
-                        <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
-                          {cat.children.map((sub: any) => {
-                            const isSelected = selectedSubcategoryId === sub.id;
-                            return (
-                              <button
-                                key={sub.id}
-                                type="button"
-                                onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center justify-between ${
-                                  isSelected
-                                    ? 'bg-primary-600/30 text-primary-300 font-bold'
-                                    : 'text-content-muted hover:text-content-secondary hover:bg-bg-surface'
-                                }`}
-                              >
-                                <span>{sub.name}</span>
-                                {isSelected && <Check className="w-3 h-3 text-primary-400" />}
-                              </button>
-                            );
-                          })}
-                        </div>
+                          removeFilterParam('category');
+                          removeFilterParam('subcategory');
+                        } else {
+                          setExpandedCatId(cat.id);
+                          setSelectedSubcategoryId(null);
+                          setSearchParams({ category: cat.id.toString() });
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-colors text-left ${
+                        isExpanded
+                          ? 'bg-primary-600/20 text-primary-400 font-bold'
+                          : 'text-content-secondary hover:bg-bg-surface hover:text-content-primary'
+                      }`}
+                    >
+                      <span className="truncate">{cat.name}</span>
+                      {hasSub && (
+                        <ChevronRight
+                          className={`w-3.5 h-3.5 transition-transform ${
+                            isExpanded ? 'rotate-90 text-primary-400' : 'text-content-muted'
+                          }`}
+                        />
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    </button>
+
+                    {isExpanded && hasSub && (
+                      <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
+                        {cat.children.map((sub: any) => {
+                          const isSelected = selectedSubcategoryId === sub.id;
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedSubcategoryId(null);
+                                  setSearchParams({ category: cat.id.toString() });
+                                } else {
+                                  setSelectedSubcategoryId(sub.id);
+                                  setSearchParams({
+                                    category: cat.id.toString(),
+                                    subcategory: sub.id.toString(),
+                                  });
+                                }
+                              }}
+                              className={`w-full text-left px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors flex items-center justify-between ${
+                                isSelected
+                                  ? 'bg-primary-600/30 text-primary-300 font-bold'
+                                  : 'text-content-muted hover:text-content-secondary hover:bg-bg-surface'
+                              }`}
+                            >
+                              <span>{sub.name}</span>
+                              {isSelected && <Check className="w-3 h-3 text-primary-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Brands Filter */}
           {brands.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-bg-border">
+            <div className="space-y-2 pt-3 border-t border-bg-border">
               <h4 className="font-head font-semibold text-[11px] text-content-muted uppercase tracking-wider">
                 Brands
               </h4>
-              <div className="space-y-1 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
                 {brands.map((b: any) => {
                   const isSelected = selectedBrandId === b.id;
                   return (
@@ -462,7 +479,7 @@ export default function ProductListPage() {
                       key={b.id}
                       type="button"
                       onClick={() => setSelectedBrandId(isSelected ? null : b.id)}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
+                      className={`w-full flex items-center justify-between p-1.5 px-2 rounded-xl text-xs transition-colors ${
                         isSelected
                           ? 'bg-primary-600/20 text-primary-400 font-bold'
                           : 'text-content-secondary hover:bg-bg-surface hover:text-content-primary'
@@ -478,7 +495,7 @@ export default function ProductListPage() {
           )}
 
           {/* Rx Toggle */}
-          <div className="pt-4 border-t border-bg-border">
+          <div className="pt-3 border-t border-bg-border">
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-xs font-semibold text-content-secondary">
                 Prescription Only (Rx)
@@ -493,11 +510,11 @@ export default function ProductListPage() {
           </div>
         </aside>
 
-        {/* ── PRODUCTS AREA ── */}
-        <main className="lg:col-span-9 space-y-5">
-          {/* Top Controls Bar */}
+        {/* ── PRODUCTS MAIN CATALOG DISPLAY ── */}
+        <main className="lg:col-span-9 space-y-4">
+          {/* Top Search & Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-bg-card border border-bg-border rounded-2xl p-3 sm:px-4 shadow-card">
-            {/* Search Input */}
+            {/* Search Box */}
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-muted" />
               <input
@@ -509,20 +526,20 @@ export default function ProductListPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-              {/* Mobile Filter Toggle */}
+            <div className="flex items-center justify-between w-full sm:w-auto gap-2.5">
+              {/* Mobile Filter Sheet Button */}
               <Button
                 variant="outline"
                 size="sm"
-                className="lg:hidden rounded-full gap-1.5 text-xs py-1"
+                className="lg:hidden rounded-full gap-1.5 text-xs py-1.5"
                 onClick={() => setMobileFilterOpen(true)}
               >
-                <Filter className="w-3.5 h-3.5" /> Filters
+                <Filter className="w-3.5 h-3.5 text-primary-400" /> Filters
               </Button>
 
               {/* Sort Select */}
-              <div className="flex items-center gap-2 text-xs text-content-secondary font-medium">
-                <span>Sort by:</span>
+              <div className="flex items-center gap-1.5 text-xs text-content-secondary font-medium">
+                <span className="hidden sm:inline">Sort:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
@@ -536,10 +553,12 @@ export default function ProductListPage() {
             </div>
           </div>
 
-          {/* Active Filter Pills Strip */}
+          {/* Active Filter Badges */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-content-muted">Active:</span>
+            <div className="flex flex-wrap items-center gap-2 bg-bg-card/50 border border-bg-border/60 rounded-xl p-2 px-3">
+              <span className="text-[11px] font-bold text-content-muted uppercase tracking-wider">
+                Active:
+              </span>
               {currentFilter && (
                 <Badge variant="warning" className="gap-1 text-[11px] rounded-full uppercase tracking-wider font-bold">
                   {currentFilter.replace('_', ' ')}
@@ -552,16 +571,30 @@ export default function ProductListPage() {
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchInput('')} />
                 </Badge>
               )}
-              {expandedCatId && (
-                <Badge variant="accent" className="gap-1 text-[11px] rounded-full">
+              {activeCategoryName && (
+                <Badge variant="info" className="gap-1 text-[11px] rounded-full">
                   Cat: {activeCategoryName}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => removeFilterParam('category')} />
+                  <X
+                    className="w-3 h-3 cursor-pointer"
+                    onClick={() => {
+                      setExpandedCatId(null);
+                      setSelectedSubcategoryId(null);
+                      removeFilterParam('category');
+                      removeFilterParam('subcategory');
+                    }}
+                  />
                 </Badge>
               )}
-              {selectedSubcategoryId && (
-                <Badge variant="primary" className="gap-1 text-[11px] rounded-full">
-                  Subcat #{selectedSubcategoryId}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => removeFilterParam('subcategory')} />
+              {activeSubcategoryName && (
+                <Badge variant="success" className="gap-1 text-[11px] rounded-full">
+                  Sub: {activeSubcategoryName}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedSubcategoryId(null)} />
+                </Badge>
+              )}
+              {selectedBrandId && (
+                <Badge variant="secondary" className="gap-1 text-[11px] rounded-full">
+                  Brand: {brands.find((b: any) => b.id === selectedBrandId)?.name}
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedBrandId(null)} />
                 </Badge>
               )}
               {rxOnlyFilter && (
@@ -570,10 +603,18 @@ export default function ProductListPage() {
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setRxOnlyFilter(false)} />
                 </Badge>
               )}
+
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[11px] font-bold text-primary-400 hover:underline ml-auto"
+              >
+                Clear All
+              </button>
             </div>
           )}
 
-          {/* Product Grid */}
+          {/* Products Grid (Native App 2-Column Mobile Layout) */}
           {variantsLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -581,14 +622,14 @@ export default function ProductListPage() {
               ))}
             </div>
           ) : filteredVariants.length === 0 ? (
-            <div className="text-center py-16 bg-bg-card border border-bg-border rounded-3xl space-y-3">
+            <div className="text-center py-16 bg-bg-card border border-bg-border rounded-3xl space-y-3 shadow-card">
               <Pill className="w-10 h-10 text-content-muted mx-auto" />
-              <h3 className="font-head font-bold text-lg text-content-primary">No Product Variants Found</h3>
+              <h3 className="font-head font-bold text-lg text-content-primary">No Matching Products</h3>
               <p className="text-content-muted text-xs max-w-sm mx-auto">
-                Try adjusting your search query or clear selected category filters.
+                Try adjusting search keywords or clearing selected filters.
               </p>
               {hasActiveFilters && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2 rounded-full text-xs">
+                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2 rounded-full text-xs font-bold">
                   Reset All Filters
                 </Button>
               )}
@@ -606,18 +647,16 @@ export default function ProductListPage() {
       {/* ── MOBILE FILTER BOTTOM DRAWER ── */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileFilterOpen(false)}
           />
 
-          {/* Drawer Sheet */}
-          <div className="relative z-10 bg-bg-card border-t border-bg-border rounded-t-3xl p-6 space-y-5 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between pb-3 border-b border-bg-border">
+          <div className="relative z-10 bg-bg-card border-t border-bg-border rounded-t-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between pb-2.5 border-b border-bg-border">
               <h3 className="font-head font-bold text-base text-content-primary flex items-center gap-2">
-                <SlidersHorizontal className="w-4.5 h-4.5 text-primary-400" />
-                Filter Catalog
+                <SlidersHorizontal className="w-4 h-4 text-primary-400" />
+                Filter Products
               </h3>
               <button
                 type="button"
@@ -629,11 +668,11 @@ export default function ProductListPage() {
             </div>
 
             {/* Categories & Subcategories Accordion */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
                 Categories & Subcategories
               </h4>
-              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
                 {categories.map((cat: any) => {
                   const isExpanded = expandedCatId === cat.id;
                   const hasSub = cat.children && cat.children.length > 0;
@@ -645,9 +684,9 @@ export default function ProductListPage() {
                           setExpandedCatId(isExpanded ? null : cat.id);
                           setSelectedSubcategoryId(null);
                         }}
-                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-colors text-left ${
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold text-left ${
                           isExpanded
-                            ? 'bg-primary-600/20 text-primary-400'
+                            ? 'bg-primary-600/20 text-primary-400 font-bold'
                             : 'text-content-secondary bg-bg-surface/50'
                         }`}
                       >
@@ -670,7 +709,7 @@ export default function ProductListPage() {
                                 key={sub.id}
                                 type="button"
                                 onClick={() => setSelectedSubcategoryId(isSelected ? null : sub.id)}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
+                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between ${
                                   isSelected
                                     ? 'bg-primary-600/30 text-primary-300 font-bold'
                                     : 'text-content-muted hover:bg-bg-surface'
@@ -691,11 +730,11 @@ export default function ProductListPage() {
 
             {/* Brands Filter */}
             {brands.length > 0 && (
-              <div className="space-y-3 pt-3 border-t border-bg-border">
+              <div className="space-y-2 pt-2 border-t border-bg-border">
                 <h4 className="font-head font-semibold text-xs text-content-muted uppercase tracking-wider">
                   Brands
                 </h4>
-                <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto custom-scrollbar">
                   {brands.map((b: any) => {
                     const isSelected = selectedBrandId === b.id;
                     return (
@@ -719,7 +758,7 @@ export default function ProductListPage() {
             )}
 
             {/* Rx Filter */}
-            <div className="pt-3 border-t border-bg-border">
+            <div className="pt-2 border-t border-bg-border">
               <label className="flex items-center justify-between cursor-pointer p-2 bg-bg-surface/50 rounded-xl border border-bg-border">
                 <span className="text-xs font-semibold text-content-secondary">
                   Prescription Only (Rx)
@@ -742,7 +781,7 @@ export default function ProductListPage() {
                   onClick={clearFilters}
                   className="flex-1 rounded-full text-xs font-bold"
                 >
-                  Reset All
+                  Reset
                 </Button>
               )}
               <Button
@@ -751,7 +790,7 @@ export default function ProductListPage() {
                 onClick={() => setMobileFilterOpen(false)}
                 className="flex-1 rounded-full text-xs font-bold py-2.5"
               >
-                Apply Filters ({filteredVariants.length} items)
+                Show {filteredVariants.length} Items
               </Button>
             </div>
           </div>
