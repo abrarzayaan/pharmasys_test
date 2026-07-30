@@ -175,6 +175,21 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# ── ImgBB Online Image Storage Configuration ──────────────────────
+IMGBB_API_KEY = os.getenv('IMGBB_API_KEY', '6ae6f2084f448bf93ad41c4b2c0a2053')
+IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload'
+
+DEFAULT_FILE_STORAGE = 'core.storage.ImgBBStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "core.storage.ImgBBStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+
 # ── CORS Configuration ────────────────────────────────────────────
 # Allow any Vite dev server / frontend port to call the Django API
 CORS_ALLOWED_ORIGIN_REGEXES = [

@@ -6,6 +6,7 @@ import Footer from './Footer';
 import MobileNav from './MobileNav';
 import CartDrawer from '@/portals/consumer/components/cart/CartDrawer';
 import CategoryModal from '@/portals/consumer/components/product/CategoryModal';
+import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
 
 import { useThemeStore } from '@/store/theme.store';
 import { useCart } from '@/hooks/useCart';
@@ -27,7 +28,7 @@ export default function Layout() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-base">
+    <div className="min-h-screen w-screen max-w-full overflow-x-hidden flex flex-col bg-bg-base relative">
       <Header />
 
       <AnimatePresence mode="wait">
@@ -37,7 +38,7 @@ export default function Layout() {
           animate={{ opacity: 1, y: 0  }}
           exit={{    opacity: 0, y: -8 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="flex-1"
+          className="flex-1 w-full max-w-full overflow-x-hidden"
         >
           <Outlet />
         </motion.main>
@@ -51,8 +52,11 @@ export default function Layout() {
       {/* Global Category Modal Overlay */}
       <CategoryModal />
 
-      {/* Mobile bottom navigation */}
+      {/* Mobile bottom navigation for app-like native UX */}
       <MobileNav />
+
+      {/* PWA Install Prompt Banner for Mobile Chrome & Desktop */}
+      <PWAInstallPrompt />
     </div>
   );
 }
