@@ -25,10 +25,10 @@ import {
 import toast from 'react-hot-toast';
 import { adminRbacApi } from '../api/adminRbac.api';
 import type {
-  AdminRole,
+  StaffRole as AdminRole,
   StaffUser,
-  AuditLog,
-  PermissionMatrix,
+  SecurityAuditLog as AuditLog,
+  ModulePermissions as PermissionMatrix,
 } from '../api/adminRbac.api';
 
 export const RbacManagementPage: React.FC = () => {
@@ -51,12 +51,12 @@ export const RbacManagementPage: React.FC = () => {
   const [roleFormName, setRoleFormName] = useState('');
   const [roleFormDesc, setRoleFormDesc] = useState('');
   const [roleFormPermissions, setRoleFormPermissions] = useState<PermissionMatrix>({
-    orders: 'read',
-    catalog: 'read',
-    users: 'none',
-    prescriptions: 'none',
-    cms: 'none',
-    analytics: 'read',
+    orders: 'READ',
+    catalog: 'READ',
+    users: 'NONE',
+    prescriptions: 'NONE',
+    cms: 'NONE',
+    analytics: 'READ',
   });
 
   // Staff Form Modal
@@ -88,17 +88,17 @@ export const RbacManagementPage: React.FC = () => {
   const filteredStaff = useMemo(() => {
     return staffList.filter((s) => {
       const matchesSearch =
-        s.username.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
-        s.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
-        s.phone_number.includes(staffSearchQuery) ||
-        s.role_name.toLowerCase().includes(staffSearchQuery.toLowerCase());
+        (s.full_name || '').toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+        (s.email || '').toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+        (s.phone_number || '').includes(staffSearchQuery) ||
+        (s.role_name || '').toLowerCase().includes(staffSearchQuery.toLowerCase());
 
       const matchesStatus =
         staffStatusFilter === 'all'
           ? true
           : staffStatusFilter === 'active'
-          ? s.is_active
-          : !s.is_active;
+          ? s.status === 'ACTIVE'
+          : s.status === 'SUSPENDED';
 
       return matchesSearch && matchesStatus;
     });
@@ -108,9 +108,9 @@ export const RbacManagementPage: React.FC = () => {
   const filteredAuditLogs = useMemo(() => {
     return auditLogs.filter((a) => {
       const matchesSearch =
-        a.description.toLowerCase().includes(auditSearchQuery.toLowerCase()) ||
-        a.actor_username.toLowerCase().includes(auditSearchQuery.toLowerCase()) ||
-        a.module.toLowerCase().includes(auditSearchQuery.toLowerCase());
+        (a.description || '').toLowerCase().includes(auditSearchQuery.toLowerCase()) ||
+        (a.actor_name || '').toLowerCase().includes(auditSearchQuery.toLowerCase()) ||
+        (a.module || '').toLowerCase().includes(auditSearchQuery.toLowerCase());
 
       const matchesAction =
         auditActionFilter === 'all' ? true : a.action_type === auditActionFilter;
@@ -125,12 +125,12 @@ export const RbacManagementPage: React.FC = () => {
     setRoleFormName('');
     setRoleFormDesc('');
     setRoleFormPermissions({
-      orders: 'read',
-      catalog: 'read',
-      users: 'none',
-      prescriptions: 'none',
-      cms: 'none',
-      analytics: 'read',
+      orders: 'READ',
+      catalog: 'READ',
+      users: 'NONE',
+      prescriptions: 'NONE',
+      cms: 'NONE',
+      analytics: 'READ',
     });
     setIsRoleModalOpen(true);
   };
@@ -154,6 +154,7 @@ export const RbacManagementPage: React.FC = () => {
       name: roleFormName,
       description: roleFormDesc,
       permissions: roleFormPermissions,
+      is_system: false,
     };
 
     if (selectedRoleId) {
@@ -169,7 +170,7 @@ export const RbacManagementPage: React.FC = () => {
   };
 
   const handleDeleteRole = async (role: AdminRole) => {
-    if (role.is_system_preset) {
+    if (role.is_system) {
       toast.error('System preset roles cannot be deleted.');
       return;
     }
@@ -201,10 +202,12 @@ export const RbacManagementPage: React.FC = () => {
     }
 
     await adminRbacApi.createStaffUser({
-      username: staffFormUsername,
+      full_name: staffFormUsername,
       email: staffFormEmail || `${staffFormUsername}@pharmasys.com`,
       phone_number: staffFormPhone,
       role_id: staffFormRoleId,
+      role_name: 'Staff',
+      status: 'ACTIVE',
     });
 
     toast.success('Staff user onboarded successfully!');
@@ -213,8 +216,9 @@ export const RbacManagementPage: React.FC = () => {
   };
 
   const handleToggleStaffStatus = async (staff: StaffUser) => {
-    await adminRbacApi.toggleStaffStatus(staff.id);
-    toast.success(staff.is_active ? `Staff ${staff.username} suspended` : `Staff ${staff.username} activated`);
+    const nextStatus = staff.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    await adminRbacApi.updateStaffStatus(staff.id, nextStatus);
+    toast.success(staff.status === 'ACTIVE' ? `Staff ${staff.full_name} suspended` : `Staff ${staff.full_name} activated`);
     loadData();
   };
 
@@ -273,7 +277,7 @@ export const RbacManagementPage: React.FC = () => {
           </div>
           <div className="text-2xl font-head font-extrabold text-content-primary">{staffList.length}</div>
           <div className="text-[10px] text-emerald-400 font-mono">
-            {staffList.filter((s) => s.is_active).length} Active Staff Accounts
+            {staffList.filter((s) => s.status === 'ACTIVE').length} Active Staff Accounts
           </div>
         </div>
 
@@ -292,7 +296,7 @@ export const RbacManagementPage: React.FC = () => {
             <Lock className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-2xl font-head font-extrabold text-rose-400">
-            {staffList.filter((s) => !s.is_active).length}
+            {staffList.filter((s) => s.status === 'SUSPENDED').length}
           </div>
           <div className="text-[10px] text-rose-400 font-mono">Access revoked</div>
         </div>
@@ -363,12 +367,12 @@ export const RbacManagementPage: React.FC = () => {
                     <div>
                       <h3 className="font-head font-bold text-base text-content-primary">{role.name}</h3>
                       <div className="text-[10px] font-mono text-content-muted">
-                        {role.user_count} Assigned Staff Users
+                        {role.member_count} Assigned Staff Users
                       </div>
                     </div>
                   </div>
 
-                  {role.is_system_preset ? (
+                  {role.is_system ? (
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                       System Preset
                     </span>
@@ -388,7 +392,7 @@ export const RbacManagementPage: React.FC = () => {
                     const info = moduleLabels[mod];
                     return (
                       <div
-                        key={mod}
+                        key={String(mod)}
                         className="p-2 rounded-xl bg-bg-surface border border-bg-border flex items-center justify-between text-[11px]"
                       >
                         <span className="text-content-secondary truncate font-medium flex items-center space-x-1">
@@ -397,14 +401,14 @@ export const RbacManagementPage: React.FC = () => {
                         </span>
                         <span
                           className={`font-mono font-bold text-[10px] px-1.5 py-0.5 rounded ${
-                            perm === 'write'
+                            perm === 'FULL' || (perm as any) === 'write'
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                              : perm === 'read'
+                              : perm === 'READ' || (perm as any) === 'read'
                               ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
                               : 'bg-bg-base text-content-muted border border-bg-border'
                           }`}
                         >
-                          {perm === 'write' ? 'Full Access' : perm === 'read' ? 'Read Only' : 'No Access'}
+                          {perm === 'FULL' || (perm as any) === 'write' ? 'Full Access' : perm === 'READ' || (perm as any) === 'read' ? 'Read Only' : 'No Access'}
                         </span>
                       </div>
                     );
@@ -414,16 +418,16 @@ export const RbacManagementPage: React.FC = () => {
 
               <div className="flex items-center justify-end space-x-2 pt-3 border-t border-bg-border">
                 <button
-                  onClick={() => openEditRoleModal(role)}
+                  onClick={() => openEditRoleModal(role as any)}
                   className="px-3 py-1.5 rounded-xl bg-bg-surface border border-bg-border hover:border-primary-500/40 text-primary-400 text-xs font-semibold flex items-center space-x-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Configure Matrix</span>
                 </button>
 
-                {!role.is_system_preset && (
+                {!role.is_system && (
                   <button
-                    onClick={() => handleDeleteRole(role)}
+                    onClick={() => handleDeleteRole(role as any)}
                     className="p-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:border-rose-500 text-rose-400 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -489,10 +493,10 @@ export const RbacManagementPage: React.FC = () => {
                       <td className="p-4 font-bold text-content-primary">
                         <div className="flex items-center space-x-2.5">
                           <div className="w-8 h-8 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-primary-400 font-bold text-xs uppercase">
-                            {staff.username[0]}
+                            {(staff.full_name || 'S')[0]}
                           </div>
                           <div>
-                            <div>{staff.username}</div>
+                            <div>{staff.full_name}</div>
                             <div className="text-[10px] text-content-muted font-mono">ID: #{staff.id}</div>
                           </div>
                         </div>
@@ -514,31 +518,31 @@ export const RbacManagementPage: React.FC = () => {
                           onClick={() => handleToggleStaffStatus(staff)}
                           className="flex items-center space-x-2 text-xs font-bold"
                         >
-                          {staff.is_active ? (
+                          {staff.status === 'ACTIVE' ? (
                             <ToggleRight className="w-6 h-6 text-emerald-400" />
                           ) : (
                             <ToggleLeft className="w-6 h-6 text-rose-400" />
                           )}
-                          <span className={staff.is_active ? 'text-emerald-400 font-mono' : 'text-rose-400 font-mono'}>
-                            {staff.is_active ? 'Active' : 'Suspended'}
+                          <span className={staff.status === 'ACTIVE' ? 'text-emerald-400 font-mono' : 'text-rose-400 font-mono'}>
+                            {staff.status}
                           </span>
                         </button>
                       </td>
 
                       <td className="p-4 font-mono text-content-muted text-[11px]">
-                        {staff.last_login !== 'Never' ? new Date(staff.last_login).toLocaleString() : 'Never'}
+                        {staff.joined_date ? new Date(staff.joined_date).toLocaleDateString() : 'N/A'}
                       </td>
 
                       <td className="p-4 text-right">
                         <button
                           onClick={() => handleToggleStaffStatus(staff)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-                            staff.is_active
+                            staff.status === 'ACTIVE'
                               ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
                               : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                           }`}
                         >
-                          {staff.is_active ? 'Suspend Account' : 'Reactivate'}
+                          {staff.status === 'ACTIVE' ? 'Suspend Account' : 'Reactivate'}
                         </button>
                       </td>
                     </tr>
@@ -608,8 +612,10 @@ export const RbacManagementPage: React.FC = () => {
                       <div className="text-content-primary font-medium">{log.description}</div>
                       <div className="flex flex-wrap items-center gap-3 text-[11px] text-content-muted font-mono">
                         <span>
-                          Actor: <strong className="text-primary-400">{log.actor_username}</strong> ({log.actor_role})
+                          Actor: <strong className="text-primary-400">{log.actor_name}</strong>
                         </span>
+                        <span>•</span>
+                        <span>Action: {log.action_type}</span>
                         <span>•</span>
                         <span>Module: {log.module}</span>
                         <span>•</span>
@@ -693,7 +699,7 @@ export const RbacManagementPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center space-x-2 shrink-0">
-                          {(['none', 'read', 'write'] as const).map((lv) => (
+                          {(['NONE', 'READ', 'FULL'] as const).map((lv) => (
                             <button
                               key={lv}
                               type="button"
@@ -705,15 +711,15 @@ export const RbacManagementPage: React.FC = () => {
                               }
                               className={`px-3 py-1 rounded-lg text-xs font-mono capitalize border transition-all ${
                                 currentVal === lv
-                                  ? lv === 'write'
+                                  ? lv === 'FULL'
                                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-bold'
-                                    : lv === 'read'
+                                    : lv === 'READ'
                                     ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40 font-bold'
                                     : 'bg-bg-base text-content-primary border-bg-border font-bold'
                                   : 'text-content-muted border-bg-border hover:text-content-primary'
                               }`}
                             >
-                              {lv === 'write' ? 'Full Access' : lv === 'read' ? 'Read Only' : 'No Access'}
+                              {lv === 'FULL' ? 'Full Access' : lv === 'READ' ? 'Read Only' : 'No Access'}
                             </button>
                           ))}
                         </div>

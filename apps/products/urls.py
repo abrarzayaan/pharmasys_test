@@ -19,9 +19,17 @@ from apps.products.views.category_product_varient import (
     ProductVariantListAPIView,
     SubCategoryListAPIView,
 )
+from apps.products.views.cms_views import (
+    CmsHeroSlideListCreateView,
+    CmsHeroSlideDetailView,
+    CmsAnnouncementBarView,
+)
 
 # ইউআরএল প্যাটার্নস
 urlpatterns = [
+    path('cms/hero-slides/', CmsHeroSlideListCreateView.as_view(), name='cms-hero-slides-list'),
+    path('cms/hero-slides/<int:pk>/', CmsHeroSlideDetailView.as_view(), name='cms-hero-slide-detail'),
+    path('cms/announcement-bar/', CmsAnnouncementBarView.as_view(), name='cms-announcement-bar'),
     path('', include(router.urls)),
     path(
         "categories/<int:category_id>/subcategories/",

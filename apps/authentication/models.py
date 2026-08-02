@@ -61,3 +61,33 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.role.name}"
+
+
+class StaffRole(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default='')
+    permissions = models.JSONField(default=dict)
+    is_system = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'staff_roles'
+
+    def __str__(self):
+        return self.name
+
+
+class SecurityAuditLog(models.Model):
+    actor_name = models.CharField(max_length=150)
+    action_type = models.CharField(max_length=50)  # CREATE, UPDATE, DELETE, AUTH, STATUS_CHANGE
+    module = models.CharField(max_length=100)
+    description = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'security_audit_logs'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.actor_name} - {self.action_type} - {self.timestamp}"

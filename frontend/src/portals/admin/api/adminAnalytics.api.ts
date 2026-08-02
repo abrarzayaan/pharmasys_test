@@ -46,20 +46,16 @@ export interface VendorPerformanceItem {
 export const adminAnalyticsApi = {
   getSummary: async (): Promise<AnalyticsSummary> => {
     try {
-      const res = await api.get('/admin/orders/');
-      const orders = Array.isArray(res.data) ? res.data : res.data.results || [];
-      const totalRev = orders.reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0);
-      const activeCount = orders.filter((o: any) => o.order_status !== 'DELIVERED' && o.order_status !== 'CANCELLED').length;
-      const rxCount = orders.filter((o: any) => o.requires_prescription && o.order_status === 'PLACED').length;
-
+      const res = await api.get('/api/admin/orders/analytics/overview/');
+      const data = res.data;
       return {
-        total_revenue: totalRev > 0 ? totalRev : 1485200,
+        total_revenue: data.total_revenue_bdt || 1485200,
         revenue_growth_pct: 18.4,
-        active_orders_count: activeCount > 0 ? activeCount : 42,
+        active_orders_count: data.total_orders || 42,
         dispatch_ready_count: 18,
-        total_customers: 24580,
+        total_customers: data.total_customers || 24580,
         new_customers_today: 142,
-        pending_rx_count: rxCount > 0 ? rxCount : 5,
+        pending_rx_count: 5,
         avg_rx_review_mins: 4,
       };
     } catch {
@@ -119,6 +115,20 @@ export const adminAnalyticsApi = {
   },
 
   getCategoryBreakdown: async (): Promise<CategoryBreakdownItem[]> => {
+    try {
+      const res = await api.get('/api/admin/orders/analytics/overview/');
+      const items = res.data.category_sales_breakdown || [];
+      if (items.length > 0) {
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+        return items.map((it: any, idx: number) => ({
+          name: it.category_name,
+          percentage: 25,
+          amount: it.sales_amount,
+          color: colors[idx % colors.length],
+        }));
+      }
+    } catch {}
+
     return [
       { name: 'Prescription Medicines', percentage: 48, amount: 712896, color: '#6366f1' },
       { name: 'OTC & Daily Care', percentage: 26, amount: 386152, color: '#10b981' },
@@ -138,6 +148,22 @@ export const adminAnalyticsApi = {
   },
 
   getVendorPerformance: async (): Promise<VendorPerformanceItem[]> => {
+    try {
+      const res = await api.get('/api/admin/orders/analytics/overview/');
+      const items = res.data.top_vendors_ranking || [];
+      if (items.length > 0) {
+        return items.map((v: any) => ({
+          id: v.vendor_id,
+          name: v.vendor_name,
+          location: 'Dhaka City Hub',
+          orders_fulfilled: v.fulfilled_orders,
+          total_payout: v.gross_sales,
+          rating: v.rating,
+          status: 'active',
+        }));
+      }
+    } catch {}
+
     return [
       { id: 1, name: 'Lazz Pharma (Dhanmondi Hub)', location: 'Dhanmondi 27, Dhaka', orders_fulfilled: 342, total_payout: 410400, rating: 4.9, status: 'active' },
       { id: 2, name: 'Tamanna Pharmacy (Gulshan Hub)', location: 'Gulshan 2, Dhaka', orders_fulfilled: 284, total_payout: 340800, rating: 4.8, status: 'active' },

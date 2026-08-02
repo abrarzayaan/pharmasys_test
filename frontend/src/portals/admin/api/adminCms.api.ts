@@ -22,9 +22,6 @@ export interface AnnouncementBarConfig {
   cta_url?: string;
 }
 
-const CMS_HERO_STORAGE_KEY = 'pharmasys_cms_hero_banners_v1';
-const CMS_ANNOUNCEMENT_STORAGE_KEY = 'pharmasys_cms_announcement_v1';
-
 const defaultHeroBanners: HeroBannerSlide[] = [
   {
     id: 1,
@@ -85,38 +82,8 @@ const defaultAnnouncement: AnnouncementBarConfig = {
   cta_url: '/account/orders',
 };
 
-// Helper for local storage read/write
-const getStoredHeroBanners = (): HeroBannerSlide[] => {
-  try {
-    const raw = localStorage.getItem(CMS_HERO_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return defaultHeroBanners;
-};
-
-const saveStoredHeroBanners = (items: HeroBannerSlide[]) => {
-  try {
-    localStorage.setItem(CMS_HERO_STORAGE_KEY, JSON.stringify(items));
-  } catch {}
-};
-
-const getStoredAnnouncement = (): AnnouncementBarConfig => {
-  try {
-    const raw = localStorage.getItem(CMS_ANNOUNCEMENT_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return defaultAnnouncement;
-};
-
-const saveStoredAnnouncement = (item: AnnouncementBarConfig) => {
-  try {
-    localStorage.setItem(CMS_ANNOUNCEMENT_STORAGE_KEY, JSON.stringify(item));
-  } catch {}
-};
-
-// Helper to sanitize slide objects from API or Storage
 const sanitizeSlide = (slide: any, index: number): HeroBannerSlide => ({
-  id: Number(slide?.id) || Date.now() + index,
+  id: Number(slide?.id) || index + 1,
   type: ['main_hero', 'side_top', 'side_bottom_left', 'side_bottom_right'].includes(slide?.type)
     ? slide.type
     : index === 0
@@ -126,86 +93,104 @@ const sanitizeSlide = (slide: any, index: number): HeroBannerSlide => ({
     : index === 2
     ? 'side_bottom_left'
     : 'side_bottom_right',
-  badge_tag: String(slide?.badge_tag || '⚡ SPECIAL OFFER'),
-  headline: String(slide?.headline || 'Essential Pharmacy Stock'),
-  subheadline: String(slide?.subheadline || 'Authentic medicines delivered to your doorstep.'),
+  badge_tag: String(slide?.badge || slide?.badge_tag || '⚡ SPECIAL OFFER'),
+  headline: String(slide?.title || slide?.headline || 'Essential Pharmacy Stock'),
+  subheadline: String(slide?.subtitle || slide?.subheadline || 'Authentic medicines delivered to your doorstep.'),
   cta_text: String(slide?.cta_text || 'Shop Now'),
-  target_url: String(slide?.target_url || '/products'),
+  target_url: String(slide?.cta_link || slide?.target_url || '/products'),
   image_url: String(slide?.image_url || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'),
-  sort_order: Number(slide?.sort_order) || index + 1,
-  is_active: slide?.is_active !== false,
+  sort_order: Number(slide?.order || slide?.sort_order) || index + 1,
+  is_active: slide?.is_published !== false && slide?.is_active !== false,
 });
 
 export const adminCmsApi = {
-  // Hero Banners
   getHeroBanners: async (): Promise<HeroBannerSlide[]> => {
     try {
-      const res = await api.get('/admin/cms/hero-banners/');
+      const res = await api.get('/api/products/cms/hero-slides/');
       const data = res.data;
-      const rawList = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
-      if (rawList.length > 0) {
-        return rawList.map(sanitizeSlide);
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map(sanitizeSlide);
       }
     } catch {}
 
-    const stored = getStoredHeroBanners();
-    const list = Array.isArray(stored) && stored.length > 0 ? stored : defaultHeroBanners;
-    return list.map(sanitizeSlide);
+    return defaultHeroBanners;
   },
 
   createHeroBanner: async (payload: Omit<HeroBannerSlide, 'id'>): Promise<HeroBannerSlide> => {
     try {
-      const res = await api.post('/admin/cms/hero-banners/', payload);
-      if (res.data && res.data.id) return res.data;
+      const res = await api.post('/api/products/cms/hero-slides/', {
+        title: payload.headline,
+        subtitle: payload.subheadline,
+        badge: payload.badge_tag,
+        cta_text: payload.cta_text,
+        cta_link: payload.target_url,
+        image_url: payload.image_url,
+        is_published: payload.is_active,
+        order: payload.sort_order,
+      });
+      if (res.data && res.data.id) return sanitizeSlide(res.data, 0);
     } catch {}
-    const list = getStoredHeroBanners();
-    const newSlide: HeroBannerSlide = {
-      ...payload,
-      id: Date.now(),
-    };
-    const updated = [newSlide, ...list];
-    saveStoredHeroBanners(updated);
-    return newSlide;
+    return { ...payload, id: Date.now() };
   },
 
   updateHeroBanner: async (id: number, payload: Partial<HeroBannerSlide>): Promise<HeroBannerSlide> => {
     try {
-      const res = await api.patch(`/admin/cms/hero-banners/${id}/`, payload);
-      if (res.data) return res.data;
+      const res = await api.patch(`/api/products/cms/hero-slides/${id}/`, {
+        title: payload.headline,
+        subtitle: payload.subheadline,
+        badge: payload.badge_tag,
+        cta_text: payload.cta_text,
+        cta_link: payload.target_url,
+        image_url: payload.image_url,
+        is_published: payload.is_active,
+        order: payload.sort_order,
+      });
+      if (res.data) return sanitizeSlide(res.data, 0);
     } catch {}
-    const list = getStoredHeroBanners();
-    const updated = list.map((item) => (item.id === id ? { ...item, ...payload } : item));
-    saveStoredHeroBanners(updated);
-    return updated.find((item) => item.id === id)!;
+    return { ...defaultHeroBanners[0], ...payload, id };
   },
 
   deleteHeroBanner: async (id: number): Promise<boolean> => {
     try {
-      await api.delete(`/admin/cms/hero-banners/${id}/`);
+      await api.delete(`/api/products/cms/hero-slides/${id}/`);
+      return true;
     } catch {}
-    const list = getStoredHeroBanners();
-    const updated = list.filter((item) => item.id !== id);
-    saveStoredHeroBanners(updated);
     return true;
   },
 
-  // Announcement Bar
   getAnnouncementBar: async (): Promise<AnnouncementBarConfig> => {
     try {
-      const res = await api.get('/admin/cms/announcement/');
-      if (res.data && res.data.text) return res.data;
+      const res = await api.get('/api/products/cms/announcement-bar/');
+      if (res.data && res.data.text) {
+        return {
+          id: res.data.id,
+          text: res.data.text,
+          bg_theme: (res.data.bg_theme || 'midnight').toLowerCase() as any,
+          is_active: res.data.is_visible !== false,
+          cta_text: 'Track Order',
+          cta_url: '/account/orders',
+        };
+      }
     } catch {}
-    return getStoredAnnouncement();
+    return defaultAnnouncement;
   },
 
   updateAnnouncementBar: async (payload: Partial<AnnouncementBarConfig>): Promise<AnnouncementBarConfig> => {
     try {
-      const res = await api.post('/admin/cms/announcement/', payload);
-      if (res.data && res.data.text) return res.data;
+      const res = await api.patch('/api/products/cms/announcement-bar/', {
+        text: payload.text,
+        bg_theme: payload.bg_theme,
+        is_visible: payload.is_active,
+      });
+      if (res.data && res.data.text) {
+        return {
+          id: res.data.id,
+          text: res.data.text,
+          bg_theme: (res.data.bg_theme || 'midnight').toLowerCase() as any,
+          is_active: res.data.is_visible !== false,
+        };
+      }
     } catch {}
-    const current = getStoredAnnouncement();
-    const updated = { ...current, ...payload };
-    saveStoredAnnouncement(updated);
-    return updated;
+    return { ...defaultAnnouncement, ...payload };
   },
 };

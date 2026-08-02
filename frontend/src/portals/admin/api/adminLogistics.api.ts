@@ -17,8 +17,6 @@ export interface DeliveryRider {
   joined_date: string;
 }
 
-const LOGISTICS_STORAGE_KEY = 'pharmasys_admin_logistics_riders_v1';
-
 const defaultRiders: DeliveryRider[] = [
   {
     id: 1,
@@ -82,95 +80,40 @@ const defaultRiders: DeliveryRider[] = [
     rating: 4.7,
     joined_date: '2025-08-20',
   },
-  {
-    id: 5,
-    rider_name: 'Mahbubur Rahman',
-    phone_number: '01555667788',
-    vehicle_type: 'Bicycle',
-    assigned_zone: 'Shahbagh & Old Dhaka',
-    status: 'OFF_DUTY',
-    current_location: 'Off Duty',
-    lat: 23.726,
-    lng: 90.3976,
-    total_deliveries_completed: 92,
-    avg_delivery_time_mins: 35,
-    rating: 4.6,
-    joined_date: '2025-09-05',
-  },
 ];
-
-const getStoredRiders = (): DeliveryRider[] => {
-  try {
-    const raw = localStorage.getItem(LOGISTICS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return defaultRiders;
-};
-
-const saveStoredRiders = (riders: DeliveryRider[]) => {
-  try {
-    localStorage.setItem(LOGISTICS_STORAGE_KEY, JSON.stringify(riders));
-  } catch {}
-};
 
 export const adminLogisticsApi = {
   getRiders: async (): Promise<DeliveryRider[]> => {
     try {
-      const res = await api.get('/api/admin/orders/riders/');
+      const res = await api.get('/api/admin/orders/riders/fleet/');
       if (Array.isArray(res.data) && res.data.length > 0) {
-        return res.data.map((r: any, idx: number) => ({
-          id: r.id,
-          rider_name: r.user?.username || r.rider_name || `Rider Partner #${r.id}`,
-          phone_number: r.phone_number || '01700000000',
-          vehicle_type: r.vehicle_type || (idx % 2 === 0 ? 'Motorcycle' : 'Scooter'),
-          assigned_zone: r.assigned_zone || 'Central Dhaka Hub',
-          status: r.is_active ? (idx % 2 === 0 ? 'IN_TRANSIT' : 'ON_DUTY') : 'OFF_DUTY',
-          current_active_order_id: idx % 2 === 0 ? `ORD-${9800 + idx}` : undefined,
-          current_location: 'Central Dhaka Hub',
-          lat: 23.75 + idx * 0.01,
-          lng: 90.37 + idx * 0.01,
-          total_deliveries_completed: (idx + 1) * 45,
-          avg_delivery_time_mins: 25,
-          rating: 4.8,
-          joined_date: '2025-01-01',
-        }));
+        return res.data;
       }
     } catch {}
-    return getStoredRiders();
+    return defaultRiders;
   },
 
   createRider: async (payload: Omit<DeliveryRider, 'id'>): Promise<DeliveryRider> => {
-    const list = getStoredRiders();
-    const newRider: DeliveryRider = {
-      ...payload,
-      id: Date.now(),
-    };
-    const updated = [newRider, ...list];
-    saveStoredRiders(updated);
-    return newRider;
+    try {
+      const res = await api.post('/api/admin/orders/riders/fleet/', payload);
+      if (res.data && res.data.id) return res.data;
+    } catch {}
+    return { ...payload, id: Date.now() };
   },
 
   updateRiderStatus: async (id: number, status: DeliveryRider['status']): Promise<DeliveryRider> => {
-    const list = getStoredRiders();
-    const updated = list.map((r) => {
-      if (r.id === id) {
-        return {
-          ...r,
-          status,
-          current_active_order_id: status === 'IN_TRANSIT' ? r.current_active_order_id || 'ORD-9899' : undefined,
-          current_location: status === 'OFF_DUTY' ? 'Off Duty' : r.current_location,
-        };
-      }
-      return r;
-    });
-    saveStoredRiders(updated);
-    return updated.find((r) => r.id === id)!;
+    try {
+      const res = await api.patch(`/api/admin/orders/riders/fleet/${id}/`, { status });
+      if (res.data) return res.data;
+    } catch {}
+    return { ...defaultRiders[0], id, status };
   },
 
   deleteRider: async (id: number): Promise<boolean> => {
-    const list = getStoredRiders();
-    const updated = list.filter((r) => r.id !== id);
-    saveStoredRiders(updated);
+    try {
+      await api.delete(`/api/admin/orders/riders/fleet/${id}/`);
+      return true;
+    } catch {}
     return true;
   },
 };

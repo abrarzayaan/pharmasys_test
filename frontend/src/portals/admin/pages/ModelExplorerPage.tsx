@@ -502,7 +502,7 @@ export const ModelExplorerPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveForm} className="space-y-4">
-              {activeModelMeta.fields.map((field) => {
+              {activeModelMeta.fields.map((field: ModelFieldMeta) => {
                 if (field.readOnly) return null;
                 const err = jsonInputError[field.name];
 

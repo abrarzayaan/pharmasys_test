@@ -19,12 +19,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminVendorSettlementApi } from '../api/adminVendorSettlement.api';
-import type { VendorFinancialSummary, PayoutRequest } from '../api/adminVendorSettlement.api';
+import type { VendorSettlementSummary, PayoutRequest } from '../api/adminVendorSettlement.api';
 
 export const VendorSettlementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ledger' | 'payouts'>('ledger');
 
-  const [vendors, setVendors] = useState<VendorFinancialSummary[]>([]);
+  const [vendors, setVendors] = useState<VendorSettlementSummary[]>([]);
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,9 +59,8 @@ export const VendorSettlementPage: React.FC = () => {
   const filteredVendors = useMemo(() => {
     return vendors.filter(
       (v) =>
-        v.pharmacy_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.owner_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.phone_number.includes(searchQuery)
+        v.vendor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.phone.includes(searchQuery)
     );
   }, [vendors, searchQuery]);
 
@@ -81,7 +80,7 @@ export const VendorSettlementPage: React.FC = () => {
   // Financial Aggregates
   const totalGrossSales = useMemo(() => vendors.reduce((acc, v) => acc + v.gross_sales_bdt, 0), [vendors]);
   const totalCommission = useMemo(() => vendors.reduce((acc, v) => acc + v.platform_commission_bdt, 0), [vendors]);
-  const totalDisbursed = useMemo(() => vendors.reduce((acc, v) => acc + v.total_payout_disbursed_bdt, 0), [vendors]);
+  const totalDisbursed = useMemo(() => vendors.reduce((acc, v) => acc + v.total_disbursed_bdt, 0), [vendors]);
   const pendingPayoutCount = useMemo(() => payouts.filter((p) => p.status === 'PENDING').length, [payouts]);
 
   // Handle Approve
@@ -248,17 +247,17 @@ export const VendorSettlementPage: React.FC = () => {
                       <td className="p-4">
                         <div className="font-bold text-content-primary flex items-center space-x-2">
                           <Building2 className="w-4 h-4 text-primary-400 shrink-0" />
-                          <span>{vendor.pharmacy_name}</span>
+                          <span>{vendor.vendor_name}</span>
                         </div>
                         <div className="text-[11px] text-content-muted font-mono space-x-2">
-                          <span>Owner: {vendor.owner_name}</span>
+                          <span>Type: {vendor.type}</span>
                           <span>•</span>
-                          <span>{vendor.phone_number}</span>
+                          <span>{vendor.phone}</span>
                         </div>
                       </td>
 
                       <td className="p-4 font-mono font-bold text-content-primary">
-                        {vendor.total_orders_fulfilled} <span className="text-[10px] font-normal text-content-muted">orders</span>
+                        {vendor.fulfilled_order_count} <span className="text-[10px] font-normal text-content-muted">orders</span>
                       </td>
 
                       <td className="p-4 font-mono font-bold text-emerald-400">
@@ -273,7 +272,7 @@ export const VendorSettlementPage: React.FC = () => {
                       </td>
 
                       <td className="p-4 font-mono font-bold text-indigo-400">
-                        ৳{vendor.total_payout_disbursed_bdt.toLocaleString()}
+                        ৳{vendor.total_disbursed_bdt.toLocaleString()}
                       </td>
 
                       <td className="p-4 font-mono">
@@ -285,8 +284,8 @@ export const VendorSettlementPage: React.FC = () => {
 
                       <td className="p-4 text-right space-y-0.5 font-mono text-[11px]">
                         <div className="text-content-primary font-bold">{vendor.bank_name}</div>
-                        <div className="text-content-muted">A/C: {vendor.account_number}</div>
-                        <div className="text-primary-400">bKash: {vendor.bkash_number}</div>
+                        <div className="text-content-muted">A/C: {vendor.bank_account_no}</div>
+                        <div className="text-primary-400">bKash: {vendor.bkash_merchant}</div>
                       </td>
                     </tr>
                   ))}
