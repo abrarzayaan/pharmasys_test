@@ -22,6 +22,7 @@ import { useWishlistStore } from '@/store/wishlist.store';
 import { useCategoryModalStore } from '@/store/categoryModal.store';
 import { useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/api/products.api';
+import { adminCmsApi } from '@/portals/admin/api/adminCms.api';
 import type { Category } from '@/types/product.types';
 import ThemeSelector from './ThemeSelector';
 
@@ -63,6 +64,24 @@ export default function Header() {
     staleTime: 1000 * 60 * 10,
   });
 
+  // Fetch CMS Announcement Bar
+  const { data: announcement } = useQuery({
+    queryKey: ['cms-announcement'],
+    queryFn: () => adminCmsApi.getAnnouncementBar(),
+    staleTime: 1000 * 30,
+  });
+
+  const announcementBgClass =
+    announcement && announcement.bg_theme
+      ? {
+          midnight: 'bg-primary-950/90 border-primary-900/50 text-primary-200',
+          emerald: 'bg-emerald-950/90 border-emerald-900/50 text-emerald-200',
+          indigo: 'bg-indigo-950/90 border-indigo-900/50 text-indigo-200',
+          rose: 'bg-rose-950/90 border-rose-900/50 text-rose-200',
+          amber: 'bg-amber-950/90 border-amber-900/50 text-amber-200',
+        }[announcement.bg_theme] || 'bg-primary-950/90 border-primary-900/50 text-primary-200'
+      : 'bg-primary-950/90 border-primary-900/50 text-primary-200';
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -74,29 +93,34 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-bg-base/95 backdrop-blur-md border-b border-bg-border shadow-sm">
       {/* ── TOP ANNOUNCEMENT BAR ── */}
-      <div className="bg-primary-950/90 border-b border-primary-900/50 py-1.5 px-4 text-[11px] text-content-secondary">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <p className="truncate font-medium text-primary-200">
-            Due to high medicine demand, orders are processed with priority express delivery across Bangladesh.
-          </p>
+      {announcement?.is_active !== false && (
+        <div className={`${announcementBgClass} border-b py-1.5 px-4 text-[11px] text-content-secondary transition-colors`}>
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <p className="truncate font-medium">
+              {announcement?.text ||
+                'Due to high medicine demand, orders are processed with priority express delivery across Bangladesh.'}
+            </p>
 
-          <div className="hidden lg:flex items-center gap-4 shrink-0 font-medium">
-            <Link to="/products" className="hover:text-content-primary transition-colors">About Us</Link>
-            <span>|</span>
-            <Link to="/products" className="hover:text-content-primary transition-colors">FAQs</Link>
-            <span>|</span>
-            <Link to="/account/orders" className="hover:text-content-primary transition-colors">Track Order</Link>
-            <span>|</span>
-            {isLoggedIn ? (
-              <span className="text-accent-400 font-bold">
-                Hello, {user?.first_name ? user.first_name : user?.phone}
-              </span>
-            ) : (
-              <Link to="/login" className="hover:text-content-primary transition-colors">My Account</Link>
-            )}
+            <div className="hidden lg:flex items-center gap-4 shrink-0 font-medium">
+              <Link to="/products" className="hover:text-content-primary transition-colors">About Us</Link>
+              <span>|</span>
+              <Link to="/products" className="hover:text-content-primary transition-colors">FAQs</Link>
+              <span>|</span>
+              <Link to={announcement?.cta_url || '/account/orders'} className="hover:text-content-primary transition-colors text-accent-400 font-bold">
+                {announcement?.cta_text || 'Track Order'}
+              </Link>
+              <span>|</span>
+              {isLoggedIn ? (
+                <span className="text-accent-400 font-bold">
+                  Hello, {user?.first_name ? user.first_name : user?.phone}
+                </span>
+              ) : (
+                <Link to="/login" className="hover:text-content-primary transition-colors">My Account</Link>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── MAIN HEADER ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
@@ -387,19 +411,22 @@ export default function Header() {
                 : 'text-content-secondary hover:text-content-primary'
                 }`}
             >
-              Top Deals
+              Best Selling
               <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[9px] font-bold">
                 BEST
               </span>
             </Link>
             <Link
-              to="/products?filter=top_rated"
-              className={`transition-colors ${isNavActive('/products', 'top_rated')
+              to="/products?filter=flash_sale"
+              className={`flex items-center gap-1 transition-colors ${isNavActive('/products', 'flash_sale')
                 ? 'text-primary-400 font-bold border-b-2 border-primary-400 py-1'
                 : 'text-content-secondary hover:text-content-primary'
                 }`}
             >
-              Top Rated
+              Flash Sale
+              <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[9px] font-bold">
+                ⚡ FLASH
+              </span>
             </Link>
           </nav>
         </div>
@@ -529,18 +556,21 @@ export default function Header() {
               className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${isNavActive('/products', 'best_selling') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
                 }`}
             >
-              <span>Top Deals (Best Selling)</span>
+              <span>Best Selling Products</span>
               <span className="px-2 py-0.5 rounded bg-accent-500/20 text-accent-400 text-[10px] font-bold">
                 BEST
               </span>
             </Link>
             <Link
-              to="/products?filter=top_rated"
+              to="/products?filter=flash_sale"
               onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 rounded-xl transition-colors ${isNavActive('/products', 'top_rated') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
+              className={`px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${isNavActive('/products', 'flash_sale') ? 'bg-primary-600/20 text-primary-400 font-bold' : 'text-content-secondary hover:bg-bg-surface'
                 }`}
             >
-              Top Rated Products
+              <span>Flash Sale Products</span>
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                ⚡ FLASH
+              </span>
             </Link>
           </nav>
         </div>

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
 from apps.products.models import Inventory
 
@@ -18,8 +19,11 @@ class InventorySerializer(serializers.ModelSerializer):
             'stock_qty', 'reserved_qty', 'damaged_qty', 'reorder_level', 
             'available_stock', 'status', 'updated_at'
         ]
-        # সিকিউরিটির জন্য ভেন্ডর এবং স্ট্যাটাস সরাসরি ইনপুট নেওয়া হবে না, ব্যাকএন্ড লজিক হ্যান্ডেল করবে
-        read_only_fields = ['id', 'vendor', 'status', 'updated_at']
+        # সিকিউরিটির জন্য স্ট্যাটাস সরাসরি ইনপুট নেওয়া হবে না, ব্যাকএন্ড লজিক হ্যান্ডেল করবে
+        read_only_fields = ['id', 'status', 'updated_at']
+        extra_kwargs = {
+            'vendor': {'required': False, 'allow_null': True}
+        }
 
     def validate(self, attrs):
         """
@@ -50,10 +54,10 @@ class InventorySerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Lead Developer Logic: রিকোয়েস্ট থেকে লগইনড ভেন্ডরকে অটো-অ্যাসাইন করা
+        Lead Developer Logic: যদি রিকোয়েস্টে ভেন্ডর উল্লেখ না থাকে তবে লগইনড ইউজারকে অটো-অ্যাসাইন করা
         """
         request = self.context.get('request')
-        if request and hasattr(request, 'user'):
+        if not validated_data.get('vendor') and request and hasattr(request, 'user'):
             validated_data['vendor'] = request.user
             
         return super().create(validated_data)

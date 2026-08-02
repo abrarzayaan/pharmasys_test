@@ -318,9 +318,9 @@ export default function VariantDetailPage() {
                     ⭐ Best Seller
                   </span>
                 )}
-                {variant.meta?.is_top_rated && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-400 text-xs font-bold">
-                    👑 Top Rated
+                {(variant.meta?.is_flash_sale || variant.meta?.is_top_rated) && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                    ⚡ Flash Sale
                   </span>
                 )}
                 {variant.meta?.is_featured && (

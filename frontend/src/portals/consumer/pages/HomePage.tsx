@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { productsApi } from '@/api/products.api';
+import { adminCmsApi } from '@/portals/admin/api/adminCms.api';
 import type { Category, ProductVariantItem, Brand } from '@/types/product.types';
 import VariantCard from '@/portals/consumer/components/product/VariantCard';
 import Button from '@/components/ui/Button';
@@ -65,6 +66,19 @@ export default function HomePage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Cached Query for CMS Hero Banners
+  const { data: heroBanners = [] } = useQuery({
+    queryKey: ['cms-hero-banners'],
+    queryFn: () => adminCmsApi.getHeroBanners(),
+    staleTime: 1000 * 30,
+  });
+
+  const safeHeroBanners = Array.isArray(heroBanners) ? heroBanners : [];
+  const mainSlide = safeHeroBanners.find((s) => s && s.type === 'main_hero' && s.is_active) || safeHeroBanners[0];
+  const sideTopSlide = safeHeroBanners.find((s) => s && s.type === 'side_top' && s.is_active) || safeHeroBanners[1];
+  const sideBottomLeftSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_left' && s.is_active) || safeHeroBanners[2];
+  const sideBottomRightSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_right' && s.is_active) || safeHeroBanners[3];
+
   // 1. Quick Access Essentials (Filtered by v.meta?.is_quick_access with randomized selection of 6 items on every view)
   const quickAccessVariants = useMemo(() => {
     if (!variants.length) return [];
@@ -103,19 +117,30 @@ export default function HomePage() {
       {/* ── HERO BANNER GRID ── */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left Main Hero Banner */}
-        <div className="lg:col-span-7 relative overflow-hidden rounded-3xl bg-bg-card border border-bg-border p-6 sm:p-10 flex flex-col justify-between min-h-[300px] sm:min-h-[340px] shadow-card">
-          <div className="space-y-3 max-w-sm">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">
-              <Zap className="w-3.5 h-3.5" /> BUY 1 GET 1 FREE
+        <div className="lg:col-span-7 relative overflow-hidden rounded-3xl bg-bg-card border border-bg-border p-6 sm:p-10 flex flex-col justify-between min-h-[300px] sm:min-h-[340px] shadow-card group">
+          {/* Background Hero Image */}
+          {mainSlide?.image_url && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <img
+                src={mainSlide.image_url}
+                alt={mainSlide.headline || 'Hero banner'}
+                className="w-full h-full object-cover object-right opacity-90 group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/75 via-45% to-transparent" />
+            </div>
+          )}
+
+          <div className="space-y-3 max-w-sm relative z-10">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border border-accent-500/20">
+              <Zap className="w-3.5 h-3.5" /> {mainSlide?.badge_tag || '⚡ BUY 1 GET 1 FREE'}
             </span>
 
-            <h1 className="font-head font-extrabold text-2xl sm:text-4xl text-content-primary leading-tight">
-              Multivitamin & <br />
-              Essential Supplements
+            <h1 className="font-head font-extrabold text-2xl sm:text-4xl text-content-primary leading-tight drop-shadow-sm">
+              {mainSlide?.headline || 'Multivitamin & Essential Supplements'}
             </h1>
 
-            <p className="text-content-secondary text-xs sm:text-sm">
-              Authentic medicines and healthcare essentials delivered directly to your doorstep.
+            <p className="text-content-secondary text-xs sm:text-sm font-medium">
+              {mainSlide?.subheadline || 'Authentic medicines and healthcare essentials delivered directly to your doorstep.'}
             </p>
 
             <div className="pt-2">
@@ -123,9 +148,9 @@ export default function HomePage() {
                 variant="primary"
                 size="sm"
                 className="rounded-full px-6 py-2.5 font-bold text-xs gap-2 shadow-glow"
-                onClick={() => navigate('/products')}
+                onClick={() => navigate(mainSlide?.target_url || '/products')}
               >
-                Get Yours Today <ArrowRight className="w-3.5 h-3.5" />
+                {mainSlide?.cta_text || 'Get Yours Today'} <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
@@ -133,41 +158,81 @@ export default function HomePage() {
 
         {/* Right Stacked Offer Banners */}
         <div className="lg:col-span-5 flex flex-col justify-between gap-5">
-          <div className="rounded-3xl bg-bg-card border border-bg-border p-6 flex flex-col justify-between h-1/2 min-h-[150px] shadow-card">
-            <div className="space-y-1.5 max-w-xs">
+          <div className="relative overflow-hidden rounded-3xl bg-bg-card border border-bg-border p-6 flex flex-col justify-between h-1/2 min-h-[150px] shadow-card group">
+            {sideTopSlide?.image_url && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <img
+                  src={sideTopSlide.image_url}
+                  alt={sideTopSlide.headline || 'Offer banner'}
+                  className="w-full h-full object-cover object-right opacity-85 group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/75 via-50% to-transparent" />
+              </div>
+            )}
+            <div className="space-y-1.5 max-w-xs relative z-10">
               <span className="text-[11px] font-bold text-accent-400 uppercase">
-                Up to 45% OFF
+                {sideTopSlide?.badge_tag || 'Up to 45% OFF'}
               </span>
               <h3 className="font-head font-bold text-base sm:text-lg text-content-primary leading-snug">
-                Get Healthy With Exclusive Medical Product Deals!
+                {sideTopSlide?.headline || 'Get Healthy With Exclusive Medical Product Deals!'}
               </h3>
             </div>
-            <div>
+            <div className="relative z-10">
               <button
                 type="button"
-                onClick={() => navigate('/products?filter=hot_deals')}
+                onClick={() => navigate(sideTopSlide?.target_url || '/products?filter=hot_deals')}
                 className="inline-flex items-center gap-1 text-xs font-bold text-accent-400 hover:underline pt-2"
               >
-                View Offers <ChevronRight className="w-3.5 h-3.5" />
+                {sideTopSlide?.cta_text || 'View Offers'} <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 h-1/2 min-h-[130px]">
-            <div className="rounded-3xl bg-bg-card border border-bg-border p-4 flex flex-col justify-between shadow-card">
-              <div>
-                <span className="text-[10px] font-bold text-accent-400">15% OFF</span>
+            <div
+              onClick={() => navigate(sideBottomLeftSlide?.target_url || '/products')}
+              className="relative overflow-hidden cursor-pointer rounded-3xl bg-bg-card border border-bg-border p-4 flex flex-col justify-between shadow-card hover:border-primary-500/40 transition-all group"
+            >
+              {sideBottomLeftSlide?.image_url && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <img
+                    src={sideBottomLeftSlide.image_url}
+                    alt={sideBottomLeftSlide.headline}
+                    className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/75 via-50% to-transparent" />
+                </div>
+              )}
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-accent-400">
+                  {sideBottomLeftSlide?.badge_tag || '15% OFF'}
+                </span>
                 <h4 className="font-head font-bold text-content-primary text-xs mt-1">
-                  Women's Wellness Gummies
+                  {sideBottomLeftSlide?.headline || "Women's Wellness Gummies"}
                 </h4>
               </div>
             </div>
 
-            <div className="rounded-3xl bg-bg-card border border-bg-border p-4 flex flex-col justify-between shadow-card">
-              <div>
-                <span className="text-[10px] font-bold text-primary-400">FLAT 20% OFF</span>
+            <div
+              onClick={() => navigate(sideBottomRightSlide?.target_url || '/products')}
+              className="relative overflow-hidden cursor-pointer rounded-3xl bg-bg-card border border-bg-border p-4 flex flex-col justify-between shadow-card hover:border-primary-500/40 transition-all group"
+            >
+              {sideBottomRightSlide?.image_url && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <img
+                    src={sideBottomRightSlide.image_url}
+                    alt={sideBottomRightSlide.headline}
+                    className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/75 via-50% to-transparent" />
+                </div>
+              )}
+              <div className="relative z-10">
+                <span className="text-[10px] font-bold text-primary-400">
+                  {sideBottomRightSlide?.badge_tag || 'FLAT 20% OFF'}
+                </span>
                 <h4 className="font-head font-bold text-content-primary text-xs mt-1">
-                  Premium Skincare Essentials
+                  {sideBottomRightSlide?.headline || 'Premium Skincare Essentials'}
                 </h4>
               </div>
             </div>
