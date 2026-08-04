@@ -37,8 +37,12 @@ class ConsumerProfileDetailSerializer(serializers.ModelSerializer):
         ]
 
 
+from apps.profiles.serializers import AddressSerializer
+
+
 class VendorProfileDetailSerializer(serializers.ModelSerializer):
     user = UserMinimalSerializer(read_only=True)
+    address = AddressSerializer(read_only=True)
 
     class Meta:
         model = VendorProfile
@@ -52,6 +56,7 @@ class VendorProfileDetailSerializer(serializers.ModelSerializer):
             "email",
             "status",
             "verification_status",
+            "address",
         ]
 
 

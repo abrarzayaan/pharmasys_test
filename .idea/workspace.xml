@@ -6,15 +6,15 @@
   <component name="ChangeListManager">
     <list default="true" id="c4577433-32a7-4a06-a0ee-93b4194fa7ca" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/authentication/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/authentication/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/API/rider/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/API/rider/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/API/rider/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/API/rider/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/serializers/order.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/serializers/order.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/profiles/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/serializers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/profiles/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/api/auth.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/auth.api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/profiles/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/api/axios.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/axios.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/components/AdminSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/components/AdminSidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/routes/admin.routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/routes/admin.routes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/vendor/routes/vendor.routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/vendor/routes/vendor.routes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/portals/rider/routes/rider.routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/rider/routes/rider.routes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/auth.store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/auth.store.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,7 +106,7 @@
       <workItem from="1785008411487" duration="1661000" />
       <workItem from="1785041819530" duration="13408000" />
       <workItem from="1785560554172" duration="4328000" />
-      <workItem from="1785827498940" duration="2764000" />
+      <workItem from="1785827498940" duration="4100000" />
     </task>
     <servers />
   </component>

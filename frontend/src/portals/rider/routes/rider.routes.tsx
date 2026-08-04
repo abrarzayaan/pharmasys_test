@@ -1,5 +1,42 @@
+import React from 'react';
 import type { RouteObject } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
+import { RiderGuard } from '../components/RiderGuard';
+import { RiderLoginPage } from '../pages/RiderLoginPage';
+import { RiderRegisterPage } from '../pages/RiderRegisterPage';
+import { RiderDashboardPage } from '../pages/RiderDashboardPage';
+import { RiderOrdersPage } from '../pages/RiderOrdersPage';
+import { RiderProfilePage } from '../pages/RiderProfilePage';
 
 export const riderRoutes: RouteObject[] = [
-  // Placeholder for Rider Portal Routes
+  {
+    path: '/rider/login',
+    element: <RiderLoginPage />,
+  },
+  {
+    path: '/rider/register',
+    element: <RiderRegisterPage />,
+  },
+  {
+    path: '/rider',
+    element: <RiderGuard />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/rider/dashboard" replace />,
+      },
+      {
+        path: 'dashboard',
+        element: <RiderDashboardPage />,
+      },
+      {
+        path: 'orders',
+        element: <RiderOrdersPage />,
+      },
+      {
+        path: 'profile',
+        element: <RiderProfilePage />,
+      },
+    ],
+  },
 ];

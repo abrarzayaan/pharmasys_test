@@ -101,14 +101,37 @@ class VendorProfileUpdateView(APIView):
 class RiderProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated, IsRider]
 
+    @extend_schema(responses=RiderProfileSerializer)
+    def get(self, request):
+        profile, created = RiderProfile.objects.get_or_create(user=request.user)
+        serializer = RiderProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @extend_schema(request=RiderProfileSerializer, responses=RiderProfileSerializer)
     def patch(self, request):
         try:
             profile = request.user.rider_profile
         except RiderProfile.DoesNotExist:
-            return Response({"error": "Rider profile not found."}, status=status.HTTP_404_NOT_FOUND)
+            profile = RiderProfile.objects.create(user=request.user)
 
         serializer = RiderProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RiderAvailabilityView(APIView):
+    permission_classes = [IsAuthenticated, IsRider]
+
+    def patch(self, request):
+        try:
+            profile = request.user.rider_profile
+        except RiderProfile.DoesNotExist:
+            profile = RiderProfile.objects.create(user=request.user)
+
+        status_val = request.data.get('availability_status')
+        if status_val in ['online', 'offline', 'busy']:
+            profile.availability_status = status_val
+            profile.save(update_fields=['availability_status', 'updated_at'])
+            return Response({'status': profile.availability_status}, status=status.HTTP_200_OK)
+        return Response({'error': 'Invalid status choice.'}, status=status.HTTP_400_BAD_REQUEST)

@@ -89,6 +89,41 @@ class VendorProfileSerializer(serializers.ModelSerializer):
 
 
 class RiderProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True)
+    last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True)
+    email = serializers.EmailField(source='user.email', required=False, allow_blank=True)
+    phone = serializers.CharField(source='user.phone_number', required=False, allow_blank=True)
+    is_profile_complete = serializers.SerializerMethodField()
+
     class Meta:
         model = RiderProfile
-        exclude = ['user']
+        fields = [
+            'id', 'vehicle_type', 'vehicle_number', 'nid_no', 'license_no',
+            'availability_status', 'verification_status', 'current_latitude', 'current_longitude',
+            'is_profile_complete', 'first_name', 'last_name', 'email', 'phone', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'verification_status']
+
+    def get_is_profile_complete(self, obj):
+        user = getattr(obj, 'user', None)
+        has_name = bool(user and user.first_name and user.first_name.strip())
+        has_phone = bool(user and user.phone_number and user.phone_number.strip())
+        has_nid = bool(obj.nid_no and obj.nid_no.strip())
+        has_vehicle = bool(obj.vehicle_type)
+        if obj.vehicle_type in ['bike', 'car']:
+            has_lic_and_no = bool(obj.license_no and obj.license_no.strip() and obj.vehicle_number and obj.vehicle_number.strip())
+            return bool(has_name and has_phone and has_nid and has_vehicle and has_lic_and_no)
+        return bool(has_name and has_phone and has_nid and has_vehicle)
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+        if user_data:
+            user = instance.user
+            for attr, val in user_data.items():
+                setattr(user, attr, val)
+            user.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

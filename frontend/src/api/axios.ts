@@ -40,7 +40,8 @@ api.interceptors.response.use(
     const isAuthRequest = error.config?.url?.includes('/auth/');
     const isPortalRoute = typeof window !== 'undefined' && (
       window.location.pathname.startsWith('/admin') || 
-      window.location.pathname.startsWith('/vendor')
+      window.location.pathname.startsWith('/vendor') ||
+      window.location.pathname.startsWith('/rider')
     );
     if (error.response?.status === 401 && !isAuthRequest && !isPortalRoute) {
       useAuthStore.getState().logout();

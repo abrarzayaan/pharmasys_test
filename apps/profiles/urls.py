@@ -4,6 +4,7 @@ from apps.profiles.views import (
     ConsumerProfileUpdateView,
     VendorProfileUpdateView,
     RiderProfileUpdateView,
+    RiderAvailabilityView,
     UserAddressListCreateView,
     UserAddressDetailView,
 )
@@ -25,6 +26,9 @@ urlpatterns = [
     path('consumer/update/', ConsumerProfileUpdateView.as_view(), name='consumer_profile_update'),
     path('vendor/update/', VendorProfileUpdateView.as_view(), name='vendor_profile_update'),
     path('rider/update/', RiderProfileUpdateView.as_view(), name='rider_profile_update'),
+    path('rider/profile/', RiderProfileUpdateView.as_view(), name='rider_profile_me'),
+    path('rider/me/', RiderProfileUpdateView.as_view(), name='rider_me'),
+    path('rider/availability/', RiderAvailabilityView.as_view(), name='rider_availability'),
 
     # Vendor Portal Dedicated API Endpoints (For /api/profiles/vendor/...)
     path('vendor/register/', VendorRegisterView.as_view(), name='vendor_register'),
