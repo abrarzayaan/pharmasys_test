@@ -11,19 +11,12 @@ import { RbacManagementPage } from '../pages/RbacManagementPage';
 import { ModelExplorerPage } from '../pages/ModelExplorerPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { VendorSettlementPage } from '../pages/VendorSettlementPage';
+import { VendorVerificationPage } from '../pages/VendorVerificationPage';
 import { LogisticsFleetPage } from '../pages/LogisticsFleetPage';
 import { AdminSectionPlaceholder } from '../pages/AdminSectionPlaceholder';
 import {
-  ShoppingCart,
   FileCheck2,
-  Package,
-  Boxes,
-  Sparkles,
   Percent,
-  Building2,
-  Truck,
-  ShieldCheck,
-  Database,
   History,
 } from 'lucide-react';
 
@@ -82,6 +75,10 @@ export const adminRoutes: RouteObject[] = [
                 icon={Percent}
               />
             ),
+          },
+          {
+            path: 'vendor-verification',
+            element: <VendorVerificationPage />,
           },
           {
             path: 'vendors',

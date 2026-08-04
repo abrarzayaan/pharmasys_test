@@ -14,10 +14,12 @@ urlpatterns = [
     
     # Apps URLs
     path('api/auth/', include('apps.authentication.urls')),
-    path('api/profiles/', include('apps.profiles.urls')), # <- এই লাইনটি যোগ করো
+    path('api/profiles/', include('apps.profiles.urls')),
+    path('api/vendor/', include('apps.profiles.urls')), # Direct vendor alias path
+    path('api/admin-vendors/', include('apps.profiles.urls')), # Direct admin vendor alias path
     path('api/products/', include('apps.products.urls')),
     path('api/cart/', include('apps.cart.urls')),
-    path("api/coupons/",include("apps.coupons.urls"),),
+    path("api/coupons/", include("apps.coupons.urls")),
     path("api/checkout/", include("apps.checkout.urls")),
     path("api/", include("apps.orders.urls")),
     

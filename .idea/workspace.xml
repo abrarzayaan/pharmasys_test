@@ -5,21 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c4577433-32a7-4a06-a0ee-93b4194fa7ca" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/authentication/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/authentication/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/authentication/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/authentication/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/orders/API/admin/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/API/admin/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/orders/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/products/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/products/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/products/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/products/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminAnalytics.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminAnalytics.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminCms.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminCms.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminExplorer.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminExplorer.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminLogistics.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminLogistics.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminRbac.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminRbac.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminVendorSettlement.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/api/adminVendorSettlement.api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/pages/ModelExplorerPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/pages/ModelExplorerPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/pages/RbacManagementPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/pages/RbacManagementPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/pages/VendorSettlementPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/pages/VendorSettlementPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/authentication/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/authentication/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/profiles/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/profiles/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/profiles/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/auth.api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/auth.api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/axios.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/axios.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/components/AdminSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/components/AdminSidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/portals/admin/routes/admin.routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/admin/routes/admin.routes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/portals/vendor/routes/vendor.routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/portals/vendor/routes/vendor.routes.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,23 +33,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "admin",
-    "last_opened_file_path": "/home/abrar/PycharmProjects/pharmaSYS__TEST",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;admin&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/abrar/PycharmProjects/pharmaSYS__TEST&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="pharmaSYS__TEST" type="Python.DjangoServer" factoryName="Django server">
       <module name="pharmaSYS__TEST" />
@@ -110,7 +105,8 @@
       <workItem from="1785004203934" duration="1147000" />
       <workItem from="1785008411487" duration="1661000" />
       <workItem from="1785041819530" duration="13408000" />
-      <workItem from="1785560554172" duration="3719000" />
+      <workItem from="1785560554172" duration="4328000" />
+      <workItem from="1785827498940" duration="2764000" />
     </task>
     <servers />
   </component>

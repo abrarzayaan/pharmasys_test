@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from apps.profiles.models import Address, ConsumerProfile, VendorProfile, RiderProfile
 
+
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
@@ -31,29 +32,56 @@ class ConsumerProfileSerializer(serializers.ModelSerializer):
 
 class VendorProfileSerializer(serializers.ModelSerializer):
     address = AddressSerializer(required=False, allow_null=True)
+    is_profile_complete = serializers.SerializerMethodField()
+    logo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    cover_image = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = VendorProfile
-        exclude = ['user', 'created_at', 'updated_at']
+        exclude = ['user']
+        read_only_fields = ['created_at', 'updated_at', 'status', 'verification_status', 'commission_rate']
+
+    def get_is_profile_complete(self, obj):
+        return bool(obj.name and obj.phone and obj.trade_license_no and obj.address)
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.logo:
+            ret['logo'] = str(instance.logo)
+        if instance.cover_image:
+            ret['cover_image'] = str(instance.cover_image)
+        return ret
 
     def update(self, instance, validated_data):
         address_data = validated_data.pop('address', None)
-        
-        # মূল ভেন্ডর প্রোফাইল আপডেট
+
+        logo_val = validated_data.pop('logo', None)
+        if logo_val is not None:
+            instance.logo = logo_val
+
+        cover_val = validated_data.pop('cover_image', None)
+        if cover_val is not None:
+            instance.cover_image = cover_val
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
 
-        # ওয়ান-টু-ওয়ান অ্যাড্রেস ক্রিয়েশন বা আপডেট হ্যান্ডেলিং
         if address_data:
             if instance.address:
-                # আগের অ্যাড্রেস থাকলে সেটা আপডেট হবে
                 for attr, value in address_data.items():
                     setattr(instance.address, attr, value)
                 instance.address.save()
             else:
-                # না থাকলে নতুন অ্যাড্রেস তৈরি হয়ে লিঙ্ক হবে
-                new_address = Address.objects.create(user=instance.user, **address_data)
+                full_addr = address_data.get('full_address') or f"{address_data.get('area', '')}, {address_data.get('city', 'Dhaka')}"
+                new_address = Address.objects.create(
+                    user=instance.user,
+                    label='pharmacy',
+                    city=address_data.get('city', 'Dhaka'),
+                    area=address_data.get('area', ''),
+                    full_address=full_addr
+                )
                 instance.address = new_address
                 instance.save()
 
@@ -63,4 +91,4 @@ class VendorProfileSerializer(serializers.ModelSerializer):
 class RiderProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = RiderProfile
-        exclude = ['user', 'created_at', 'updated_at']
+        exclude = ['user']

@@ -64,7 +64,23 @@ class RegisterSerializer(serializers.Serializer):
             if role_name == "consumer":
                 ConsumerProfile.objects.get_or_create(user=user)
             elif role_name == "vendor":
-                VendorProfile.objects.get_or_create(user=user)
+                # pyrefly: ignore [missing-import]
+                from django.utils.text import slugify
+                base_slug = slugify(user.username or user.first_name or "vendor")
+                slug = base_slug
+                counter = 1
+                while VendorProfile.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                VendorProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'name': f"{user.first_name} {user.last_name}".strip() or f"{user.username} Store",
+                        'slug': slug,
+                        'phone': user.phone_number,
+                        'email': user.email,
+                    }
+                )
             elif role_name == "rider":
                 RiderProfile.objects.get_or_create(user=user)
 

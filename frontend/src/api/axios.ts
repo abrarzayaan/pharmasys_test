@@ -38,8 +38,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const isAuthRequest = error.config?.url?.includes('/auth/');
-    const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
-    if (error.response?.status === 401 && !isAuthRequest && !isAdminRoute) {
+    const isPortalRoute = typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/admin') || 
+      window.location.pathname.startsWith('/vendor')
+    );
+    if (error.response?.status === 401 && !isAuthRequest && !isPortalRoute) {
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
@@ -48,4 +51,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-

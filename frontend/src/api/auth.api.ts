@@ -11,7 +11,7 @@ export interface RegisterPayload {
   phone: string;
   email: string;
   password: string;
-  role: 'consumer';
+  role?: 'consumer' | 'vendor' | 'rider';
 }
 
 export const authApi = {
