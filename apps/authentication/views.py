@@ -24,10 +24,9 @@ User = get_user_model()
 
 def get_tokens_for_user(user: Users) -> dict:
     refresh = RefreshToken.for_user(user)
-    user_role = UserRole.objects.filter(user=user).select_related('role').first()
-    role = user_role.role.name if user_role and user_role.role else "consumer"
-
+    role = user.get_role_name()
     refresh["role"] = role
+
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token)
@@ -76,6 +75,7 @@ class LoginView(APIView):
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
             tokens = get_tokens_for_user(user)
+            staff_role_name = user.staff_role.name if user.staff_role else ("Super Admin" if user.is_superuser else ("Staff Member" if user.is_staff else None))
             tokens["user"] = {
                 "id": user.id,
                 "phone": user.phone_number or user.username,
@@ -83,6 +83,11 @@ class LoginView(APIView):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "username": user.username,
+                "role": user.get_role_name(),
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+                "staff_role": staff_role_name,
+                "permissions": user.get_permissions_dict(),
             }
             return Response(tokens, status=status.HTTP_200_OK)
 
@@ -90,6 +95,26 @@ class LoginView(APIView):
             "error": "Invalid phone number/username or password"
         }, status=status.HTTP_401_UNAUTHORIZED)
 
+
+class MeView(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        user = request.user
+        staff_role_name = user.staff_role.name if user.staff_role else ("Super Admin" if user.is_superuser else ("Staff Member" if user.is_staff else None))
+        return Response({
+            "id": user.id,
+            "phone": user.phone_number or user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "role": user.get_role_name(),
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,
+            "staff_role": staff_role_name,
+            "permissions": user.get_permissions_dict(),
+        })
 
 
 class CustomTokenView(TokenObtainPairView):

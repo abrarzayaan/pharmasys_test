@@ -1,6 +1,10 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import status
+# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import AllowAny
 from apps.authentication.models import Users, StaffRole, SecurityAuditLog
 
@@ -16,7 +20,7 @@ class StaffRoleListCreateView(APIView):
                 "description": r.description,
                 "permissions": r.permissions,
                 "is_system": r.is_system,
-                "member_count": Users.objects.filter(is_staff=True).count(),
+                "member_count": Users.objects.filter(staff_role=r).count() if not r.is_system else Users.objects.filter(is_superuser=True).count(),
                 "created_at": r.created_at.isoformat() if r.created_at else "",
             }
             for r in roles
@@ -106,20 +110,39 @@ class StaffRoleDetailView(APIView):
         except StaffRole.DoesNotExist:
             return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
 
+# pyrefly: ignore [missing-import]
+from django.db.models import Q
 
 class StaffUserListCreateView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        users = Users.objects.filter(is_staff=True)
+        query = request.query_params.get('search') or request.query_params.get('q')
+        
+        if query:
+            query = query.strip()
+            users = Users.objects.filter(
+                Q(username__icontains=query) |
+                Q(phone_number__icontains=query) |
+                Q(email__icontains=query) |
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query)
+            )
+        else:
+            users = Users.objects.filter(Q(is_staff=True) | Q(is_superuser=True))
+
         data = [
             {
                 "id": u.id,
                 "full_name": f"{u.first_name} {u.last_name}".strip() or u.username,
+                "username": u.username,
                 "email": u.email,
                 "phone_number": u.phone_number or "N/A",
-                "role_id": 1,
-                "role_name": "Super Admin" if u.is_superuser else "Staff Member",
+                "role_id": u.staff_role_id or (1 if u.is_superuser else 2),
+                "role_name": u.staff_role.name if u.staff_role else ("Super Admin" if u.is_superuser else "Staff Member"),
+                "is_superuser": u.is_superuser,
+                "is_staff": u.is_staff,
+                "permissions": u.get_permissions_dict(),
                 "status": "ACTIVE" if u.is_active else "SUSPENDED",
                 "joined_date": u.date_joined.isoformat() if u.date_joined else "",
             }
@@ -129,39 +152,88 @@ class StaffUserListCreateView(APIView):
 
     def post(self, request):
         data = request.data
-        username = data.get("username") or data.get("full_name", "").replace(" ", "_").lower()
-        email = data.get("email", "")
-        phone_number = data.get("phone_number", "")
-        password = data.get("password", "Pass12345!")
+        first_name = data.get("first_name", "").strip()
+        last_name = data.get("last_name", "").strip()
+        phone_number = (data.get("phone_number") or data.get("phone") or "").strip()
+        email = data.get("email", "").strip()
+        username = (data.get("username") or phone_number or f"{first_name}_{last_name}".lower()).strip()
+        password = data.get("password") or "Pass12345!"
+        role_id = data.get("role_id")
 
-        if not phone_number or not email:
-            return Response({"error": "Email and Phone Number are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone_number:
+            return Response({"error": "Phone Number is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = Users.objects.create_user(
-            phone_number=phone_number,
-            email=email,
-            username=username,
-            password=password,
-            is_staff=True,
-            is_active=True,
-        )
+        # Get or find default "Admin" StaffRole
+        staff_role_obj = None
+        if role_id:
+            try:
+                staff_role_obj = StaffRole.objects.get(pk=role_id)
+            except StaffRole.DoesNotExist:
+                pass
 
-        SecurityAuditLog.objects.create(
-            actor_name="Super Admin",
-            action_type="CREATE",
-            module="STAFF_MANAGEMENT",
-            description=f"Onboarded new staff member: {user.username}",
-            ip_address=request.META.get('REMOTE_ADDR'),
-        )
+        if not staff_role_obj:
+            staff_role_obj = StaffRole.objects.filter(name__iexact="Admin").first() or StaffRole.objects.filter(is_system=False).first()
 
-        return Response({
-            "id": user.id,
-            "full_name": user.username,
-            "email": user.email,
-            "phone_number": user.phone_number,
-            "role_name": "Staff Member",
-            "status": "ACTIVE",
-        }, status=status.HTTP_201_CREATED)
+        # Check if user already exists
+        user = Users.objects.filter(Q(phone_number=phone_number) | Q(username=username)).first()
+
+        try:
+            if user:
+                user.is_staff = True
+                if first_name:
+                    user.first_name = first_name
+                if last_name:
+                    user.last_name = last_name
+                if email:
+                    user.email = email
+                if password and password != "Pass12345!":
+                    user.set_password(password)
+                if staff_role_obj:
+                    user.staff_role = staff_role_obj
+                user.save()
+            else:
+                user = Users.objects.create_user(
+                    phone_number=phone_number,
+                    email=email or f"{phone_number}@pharmasys.com",
+                    username=username or phone_number,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_staff=True,
+                    is_superuser=False,
+                    is_active=True,
+                    staff_role=staff_role_obj,
+                )
+
+            from apps.authentication.models import Role, UserRole
+            admin_role_model, _ = Role.objects.get_or_create(name="ADMIN")
+            UserRole.objects.get_or_create(user=user, role=admin_role_model)
+
+            SecurityAuditLog.objects.create(
+                actor_name="Super Admin",
+                action_type="CREATE",
+                module="STAFF_MANAGEMENT",
+                description=f"Created staff admin user: {user.username} ({user.phone_number})",
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+
+            return Response({
+                "id": user.id,
+                "full_name": f"{user.first_name} {user.last_name}".strip() or user.username,
+                "username": user.username,
+                "email": user.email,
+                "phone_number": user.phone_number,
+                "role_id": user.staff_role_id or 1,
+                "role_name": user.staff_role.name if user.staff_role else "Admin",
+                "is_superuser": user.is_superuser,
+                "is_staff": user.is_staff,
+                "permissions": user.get_permissions_dict(),
+                "status": "ACTIVE" if user.is_active else "SUSPENDED",
+                "joined_date": user.date_joined.isoformat() if user.date_joined else "",
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": f"Failed to create admin user: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class StaffUserDetailView(APIView):
@@ -169,7 +241,7 @@ class StaffUserDetailView(APIView):
 
     def patch(self, request, pk):
         try:
-            user = Users.objects.get(pk=pk, is_staff=True)
+            user = Users.objects.get(pk=pk)
         except Users.DoesNotExist:
             return Response({"error": "Staff member not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -186,9 +258,27 @@ class StaffUserDetailView(APIView):
                 ip_address=request.META.get('REMOTE_ADDR'),
             )
 
+        if "role_id" in request.data:
+            role_id = request.data["role_id"]
+            try:
+                s_role = StaffRole.objects.get(pk=role_id)
+                user.staff_role = s_role
+                user.is_staff = True
+                user.save()
+            except StaffRole.DoesNotExist:
+                pass
+
         return Response({
             "id": user.id,
             "full_name": user.username,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "role_id": user.staff_role_id or 1,
+            "role_name": user.staff_role.name if user.staff_role else ("Super Admin" if user.is_superuser else "Staff Member"),
+            "is_superuser": user.is_superuser,
+            "is_staff": user.is_staff,
+            "permissions": user.get_permissions_dict(),
             "status": "ACTIVE" if user.is_active else "SUSPENDED",
         })
 

@@ -24,8 +24,11 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ── Request interceptor: attach JWT ──────────────────────────────
+// ── Request interceptor: attach JWT & normalize duplicate /api prefix ──
 api.interceptors.request.use((config) => {
+  if (config.url && config.url.startsWith('/api/')) {
+    config.url = config.url.replace(/^\/api\//, '/');
+  }
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

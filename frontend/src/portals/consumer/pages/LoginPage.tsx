@@ -31,15 +31,34 @@ export default function LoginPage() {
   const location = useLocation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const user = useAuthStore((s) => s.user);
   const [showPass, setShowPass] = useState(false);
 
   const prefillPhone = location.state?.phone || '';
 
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get('redirect');
+
   useEffect(() => {
-    if (isLoggedIn) {
-      navigate('/', { replace: true });
+    if (isLoggedIn && user) {
+      const isUserAdmin = Boolean(user.is_superuser || user.is_staff || user.role === 'SUPERADMIN' || user.role === 'ADMIN');
+
+      if (isUserAdmin) {
+        if (redirectParam) {
+          navigate(redirectParam, { replace: true });
+        } else {
+          navigate('/admin', { replace: true });
+        }
+      } else {
+        if (redirectParam && !redirectParam.startsWith('/admin')) {
+          navigate(redirectParam, { replace: true });
+        } else if (!redirectParam) {
+          navigate('/', { replace: true });
+        }
+        // If redirectParam starts with /admin, stay on /login so user can log in with an Admin account
+      }
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, user, navigate, redirectParam]);
 
   const {
     register,
@@ -56,13 +75,22 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       const res = await authApi.login(data);
-      const { access, refresh, user } = res.data;
+      const { access, refresh, user: loggedUser } = res.data;
 
-      // Store tokens; user object carries phone/username for header display
-      setAuth(access, refresh, user || { phone: data.phone });
+      // Store tokens; user object carries phone/username & RBAC permissions
+      setAuth(access, refresh, loggedUser || { phone: data.phone });
 
       toast.success('Welcome back! 👋');
-      navigate('/', { replace: true });
+
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get('redirect');
+      if (redirectParam) {
+        navigate(redirectParam, { replace: true });
+      } else if (loggedUser?.is_superuser || loggedUser?.is_staff || loggedUser?.role === 'SUPERADMIN' || loggedUser?.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ||
@@ -155,6 +183,16 @@ export default function LoginPage() {
               Sign in with your phone number or username
             </p>
           </div>
+
+          {/* Admin access notice if redirected from /admin */}
+          {redirectParam?.startsWith('/admin') && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                <ShieldCheck className="w-4 h-4" /> Admin Access Required
+              </div>
+              <p>Please sign in with an authorized <strong>Super Admin</strong> or <strong>Staff Admin</strong> account to access the Admin Portal.</p>
+            </div>
+          )}
 
           {/* Form */}
           <form

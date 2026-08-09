@@ -247,10 +247,24 @@ export default function Header() {
                 <div className="absolute right-0 mt-2 w-52 bg-bg-card border border-bg-border rounded-2xl shadow-card py-2 z-50">
                   <div className="px-3 py-2 border-b border-bg-border">
                     <p className="text-xs font-bold text-content-primary truncate">
-                      {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Valued Customer'}
+                      {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (user?.username || 'Valued User')}
                     </p>
                     <p className="text-[10px] text-content-muted font-mono truncate">{user?.phone}</p>
+                    {Boolean(user?.is_superuser || user?.is_staff || user?.role === 'SUPERADMIN' || user?.role === 'ADMIN') && (
+                      <span className="inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-mono font-bold border border-primary-500/30">
+                        {user?.staff_role || (user?.is_superuser ? 'Super Admin' : 'Staff Admin')}
+                      </span>
+                    )}
                   </div>
+                  {Boolean(user?.is_superuser || user?.is_staff || user?.role === 'SUPERADMIN' || user?.role === 'ADMIN') && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs text-primary-400 hover:bg-primary-500/10 transition-colors font-bold border-b border-bg-border"
+                    >
+                      <Sparkles className="w-4 h-4 text-primary-400" /> Admin Portal Dashboard
+                    </Link>
+                  )}
                   <Link
                     to="/account/profile"
                     onClick={() => setUserMenuOpen(false)}

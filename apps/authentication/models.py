@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 class CustomUserManager(BaseUserManager):
@@ -19,6 +21,7 @@ class CustomUserManager(BaseUserManager):
 
 class Users(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True, unique=True)
+    staff_role = models.ForeignKey('StaffRole', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff_users')
 
     objects = CustomUserManager()
 
@@ -35,6 +38,41 @@ class Users(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def get_role_name(self):
+        if self.is_superuser:
+            return "SUPERADMIN"
+        if self.is_staff:
+            return "ADMIN"
+        user_role = UserRole.objects.filter(user=self).select_related('role').first()
+        if user_role and user_role.role:
+            return user_role.role.name.upper()
+        return "CONSUMER"
+
+    def get_permissions_dict(self):
+        all_modules = [
+            "dashboard", "orders", "prescriptions", "creation",
+            "catalog", "inventory", "cms", "promotions",
+            "vendor-verification", "vendors", "logistics",
+            "rbac", "explorer", "audit-logs"
+        ]
+        if self.is_superuser:
+            return {m: 'FULL' for m in all_modules}
+        if self.is_staff and self.staff_role and self.staff_role.permissions:
+            perms = self.staff_role.permissions
+            result = {}
+            for m in all_modules:
+                val = perms.get(m, 'NONE')
+                if val in ['FULL', True, 'write', 'FULL_ACCESS']:
+                    result[m] = 'FULL'
+                elif val in ['READ', 'read', 'VIEW_ONLY']:
+                    result[m] = 'READ'
+                else:
+                    result[m] = 'NONE'
+            return result
+        if self.is_staff:
+            return {m: 'FULL' if m in ["dashboard", "orders"] else 'NONE' for m in all_modules}
+        return {m: 'NONE' for m in all_modules}
 
 
 class Role(models.Model):

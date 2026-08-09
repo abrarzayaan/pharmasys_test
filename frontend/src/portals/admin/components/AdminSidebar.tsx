@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import type { NavGroup } from '../types/admin.types';
 
+import { useAuthStore } from '@/store/auth.store';
+
 interface AdminSidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -98,6 +100,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCloseMobile,
 }) => {
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+
+  const isSuperAdmin = Boolean(user?.is_superuser || user?.role === 'SUPERADMIN');
+  const userPerms = user?.permissions || {};
+
+  // Filter Nav Groups based on dynamic permissions
+  const filteredNavGroups = ADMIN_NAV_GROUPS.map((group) => {
+    const visibleItems = group.items.filter((item) => {
+      if (isSuperAdmin) return true;
+      if (item.id === 'dashboard') return true;
+      return Boolean(userPerms[item.id]);
+    });
+    return { ...group, items: visibleItems };
+  }).filter((group) => group.items.length > 0);
 
   const getBadgeStyle = (color?: string) => {
     switch (color) {
@@ -140,7 +156,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   PharmaSys <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400 font-mono font-semibold border border-primary-500/30">ADMIN</span>
                 </span>
                 <span className="text-xs text-content-muted truncate font-mono">
-                  Super Admin Portal v2.4
+                  {user?.staff_role || (isSuperAdmin ? 'Super Admin' : 'Staff Admin')}
                 </span>
               </div>
             )}
@@ -158,7 +174,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
         {/* Navigation Modules Scroll Area */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-bg-border">
-          {ADMIN_NAV_GROUPS.map((group, groupIdx) => (
+          {filteredNavGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-1">
               {!isCollapsed && (
                 <div className="px-3 text-[11px] font-bold text-content-muted uppercase tracking-wider font-mono">

@@ -9,6 +9,7 @@ export interface ModulePermissions {
   prescriptions: PermissionLevel;
   cms: PermissionLevel;
   analytics: PermissionLevel;
+  [key: string]: PermissionLevel;
 }
 
 export interface StaffRole {
@@ -23,10 +24,17 @@ export interface StaffRole {
 export interface StaffUser {
   id: number;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
   email: string;
   phone_number: string;
+  password?: string;
   role_id: number;
   role_name: string;
+  is_superuser?: boolean;
+  is_staff?: boolean;
+  permissions?: Record<string, boolean | string>;
   status: 'ACTIVE' | 'SUSPENDED';
   joined_date: string;
 }
@@ -44,112 +52,68 @@ export interface SecurityAuditLog {
 export const adminRbacApi = {
   getRoles: async (): Promise<StaffRole[]> => {
     try {
-      const res = await api.get('/api/auth/rbac/roles/');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      const res = await api.get('/auth/rbac/roles/');
+      if (Array.isArray(res.data)) {
         return res.data;
       }
-    } catch {}
-
-    return [
-      {
-        id: 1,
-        name: 'Super Admin',
-        description: 'Full system privileges across all operations',
-        permissions: { orders: 'FULL', catalog: 'FULL', users: 'FULL', prescriptions: 'FULL', cms: 'FULL', analytics: 'FULL' },
-        is_system: true,
-        member_count: 2,
-      },
-      {
-        id: 2,
-        name: 'Order Lead',
-        description: 'Fulfillment control and rider dispatching',
-        permissions: { orders: 'FULL', catalog: 'READ', users: 'NONE', prescriptions: 'READ', cms: 'NONE', analytics: 'READ' },
-        is_system: false,
-        member_count: 5,
-      },
-    ];
+    } catch (err) {
+      console.error('Error fetching roles:', err);
+    }
+    return [];
   },
 
   createRole: async (payload: Omit<StaffRole, 'id' | 'member_count'>): Promise<StaffRole> => {
-    try {
-      const res = await api.post('/api/auth/rbac/roles/', payload);
-      if (res.data && res.data.id) return res.data;
-    } catch {}
-    return { ...payload, id: Date.now(), member_count: 0 };
+    const res = await api.post('/auth/rbac/roles/', payload);
+    return res.data;
   },
 
   updateRole: async (id: number, payload: Partial<StaffRole>): Promise<StaffRole> => {
-    try {
-      const res = await api.patch(`/api/auth/rbac/roles/${id}/`, payload);
-      if (res.data) return res.data;
-    } catch {}
-    return { id, name: payload.name || 'Role', description: '', permissions: payload.permissions as any, is_system: false, member_count: 1 };
+    const res = await api.patch(`/auth/rbac/roles/${id}/`, payload);
+    return res.data;
   },
 
   deleteRole: async (id: number): Promise<boolean> => {
-    try {
-      await api.delete(`/api/auth/rbac/roles/${id}/`);
-      return true;
-    } catch {}
+    await api.delete(`/auth/rbac/roles/${id}/`);
     return true;
   },
 
-  getStaffUsers: async (): Promise<StaffUser[]> => {
+  getStaffUsers: async (searchQuery?: string): Promise<StaffUser[]> => {
     try {
-      const res = await api.get('/api/auth/rbac/staff/');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      const url = searchQuery ? `/auth/rbac/staff/?search=${encodeURIComponent(searchQuery)}` : '/auth/rbac/staff/';
+      const res = await api.get(url);
+      if (Array.isArray(res.data)) {
         return res.data;
       }
-    } catch {}
-
-    return [
-      {
-        id: 1,
-        full_name: 'Super Administrator',
-        email: 'admin@pharmasys.com',
-        phone_number: '01700000000',
-        role_id: 1,
-        role_name: 'Super Admin',
-        status: 'ACTIVE',
-        joined_date: '2025-01-01',
-      },
-    ];
+    } catch (err) {
+      console.error('Error fetching staff users:', err);
+    }
+    return [];
   },
 
-  createStaffUser: async (payload: Omit<StaffUser, 'id' | 'joined_date'>): Promise<StaffUser> => {
-    try {
-      const res = await api.post('/api/auth/rbac/staff/', payload);
-      if (res.data && res.data.id) return res.data;
-    } catch {}
-    return { ...payload, id: Date.now(), joined_date: new Date().toISOString() };
+  createStaffUser: async (payload: Partial<StaffUser>): Promise<StaffUser> => {
+    const res = await api.post('/auth/rbac/staff/', payload);
+    return res.data;
+  },
+
+  updateStaffUserRole: async (id: number, roleId: number): Promise<StaffUser> => {
+    const res = await api.patch(`/auth/rbac/staff/${id}/`, { role_id: roleId });
+    return res.data;
   },
 
   updateStaffStatus: async (id: number, status: 'ACTIVE' | 'SUSPENDED'): Promise<StaffUser> => {
-    try {
-      const res = await api.patch(`/api/auth/rbac/staff/${id}/`, { status });
-      if (res.data) return res.data;
-    } catch {}
-    return { id, full_name: 'Staff User', email: '', phone_number: '', role_id: 1, role_name: 'Staff', status, joined_date: '' };
+    const res = await api.patch(`/auth/rbac/staff/${id}/`, { status });
+    return res.data;
   },
 
   getAuditLogs: async (): Promise<SecurityAuditLog[]> => {
     try {
-      const res = await api.get('/api/auth/rbac/audit-logs/');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      const res = await api.get('/auth/rbac/audit-logs/');
+      if (Array.isArray(res.data)) {
         return res.data;
       }
-    } catch {}
-
-    return [
-      {
-        id: 1,
-        actor_name: 'Super Admin',
-        action_type: 'AUTH',
-        module: 'LOGIN',
-        description: 'Super Admin authenticated into Admin Portal',
-        ip_address: '127.0.0.1',
-        timestamp: new Date().toISOString(),
-      },
-    ];
+    } catch (err) {
+      console.error('Error fetching audit logs:', err);
+    }
+    return [];
   },
 };
