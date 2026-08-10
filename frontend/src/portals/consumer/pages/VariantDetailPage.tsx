@@ -41,7 +41,11 @@ export default function VariantDetailPage() {
   const navigate = useNavigate();
   const variantId = Number(id);
 
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, user } = useAuthStore();
+  const isPartnerUser = Boolean(
+    user?.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+  );
+  const isConsumerLoggedIn = isLoggedIn && !isPartnerUser;
   const { toggle: toggleWishlist, isWishlisted } = useWishlistStore();
   const { addItem, isAdding: isAddingCart } = useCart();
 
@@ -144,8 +148,8 @@ export default function VariantDetailPage() {
 
   // Handle Buy Now
   const handleBuyNow = async () => {
-    if (!isLoggedIn) {
-      toast.error('Please log in to proceed with checkout.');
+    if (!isConsumerLoggedIn) {
+      toast.error('Please log in as a consumer to proceed with checkout.');
       navigate('/login');
       return;
     }

@@ -16,7 +16,12 @@ interface VariantCardProps {
 
 export default function VariantCard({ variant, showTimer = false }: VariantCardProps) {
   const navigate = useNavigate();
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const { isLoggedIn, user } = useAuthStore();
+  const isPartnerUser = Boolean(
+    user?.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+  );
+  const isConsumerLoggedIn = isLoggedIn && !isPartnerUser;
+
   const { toggle, isWishlisted } = useWishlistStore();
   const wishlisted = isWishlisted(variant.id);
   const { addItem, isAdding, updatingVariantId } = useCart();
@@ -29,7 +34,7 @@ export default function VariantCard({ variant, showTimer = false }: VariantCardP
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isLoggedIn) {
+    if (!isConsumerLoggedIn) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;

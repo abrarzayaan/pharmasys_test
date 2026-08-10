@@ -30,6 +30,10 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isLoggedIn, logout } = useAuthStore();
+  const isPartnerUser = Boolean(
+    user?.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+  );
+  const isConsumerLoggedIn = isLoggedIn && !isPartnerUser;
   const itemCount = useCartStore((s) => s.itemCount);
   const openDrawer = useCartStore((s) => s.openDrawer);
   const wishlistCount = useWishlistStore((s) => s.items.length);
@@ -110,7 +114,7 @@ export default function Header() {
                 {announcement?.cta_text || 'Track Order'}
               </Link>
               <span>|</span>
-              {isLoggedIn ? (
+              {isConsumerLoggedIn ? (
                 <span className="text-accent-400 font-bold">
                   Hello, {user?.first_name ? user.first_name : user?.phone}
                 </span>
@@ -233,7 +237,7 @@ export default function Header() {
           {/* Theme Selector Dropdown */}
           <ThemeSelector />
 
-          {isLoggedIn ? (
+          {isConsumerLoggedIn ? (
             <div className="relative">
               <button
                 type="button"

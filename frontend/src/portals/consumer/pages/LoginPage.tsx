@@ -41,6 +41,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isLoggedIn && user) {
+      const isVendorOrRider = Boolean(
+        user.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+      );
+      if (isVendorOrRider) {
+        return;
+      }
+
       const isUserAdmin = Boolean(user.is_superuser || user.is_staff || user.role === 'SUPERADMIN' || user.role === 'ADMIN');
 
       if (isUserAdmin) {
@@ -55,7 +62,6 @@ export default function LoginPage() {
         } else if (!redirectParam) {
           navigate('/', { replace: true });
         }
-        // If redirectParam starts with /admin, stay on /login so user can log in with an Admin account
       }
     }
   }, [isLoggedIn, user, navigate, redirectParam]);
@@ -77,16 +83,24 @@ export default function LoginPage() {
       const res = await authApi.login(data);
       const { access, refresh, user: loggedUser } = res.data;
 
-      // Store tokens; user object carries phone/username & RBAC permissions
-      setAuth(access, refresh, loggedUser || { phone: data.phone });
+      // Ensure user object has a default consumer role if not vendor or rider
+      const userData = loggedUser || { phone: data.phone, role: 'consumer' };
+      if (!userData.role) userData.role = 'consumer';
+
+      setAuth(access, refresh, userData);
 
       toast.success('Welcome back! 👋');
 
       const searchParams = new URLSearchParams(location.search);
       const redirectParam = searchParams.get('redirect');
-      if (redirectParam) {
+
+      if (userData.role === 'vendor') {
+        navigate('/vendor', { replace: true });
+      } else if (userData.role === 'rider') {
+        navigate('/rider', { replace: true });
+      } else if (redirectParam) {
         navigate(redirectParam, { replace: true });
-      } else if (loggedUser?.is_superuser || loggedUser?.is_staff || loggedUser?.role === 'SUPERADMIN' || loggedUser?.role === 'ADMIN') {
+      } else if (userData.is_superuser || userData.is_staff || userData.role === 'SUPERADMIN' || userData.role === 'ADMIN') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/', { replace: true });

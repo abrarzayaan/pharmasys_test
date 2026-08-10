@@ -23,14 +23,16 @@ import {
 import toast from 'react-hot-toast';
 import { adminLogisticsApi } from '../api/adminLogistics.api';
 import type { DeliveryRider } from '../api/adminLogistics.api';
+import { adminRiderVerificationApi, type AdminRiderItem } from '../api/adminRiderVerification.api';
 
 export const LogisticsFleetPage: React.FC = () => {
   const [riders, setRiders] = useState<DeliveryRider[]>([]);
+  const [dbRiders, setDbRiders] = useState<AdminRiderItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_TRANSIT' | 'ON_DUTY' | 'OFF_DUTY'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_TRANSIT' | 'ON_DUTY' | 'OFF_DUTY'>('ALL');
   const [selectedRider, setSelectedRider] = useState<DeliveryRider | null>(null);
 
   // Add/Edit Rider Modal
@@ -42,17 +44,39 @@ export const LogisticsFleetPage: React.FC = () => {
 
   const loadRiders = async () => {
     setLoading(true);
-    const data = await adminLogisticsApi.getRiders();
-    setRiders(data);
-    if (data.length > 0 && !selectedRider) {
-      setSelectedRider(data[0]);
+    try {
+      const [fleetData, pendingList] = await Promise.all([
+        adminLogisticsApi.getRiders(),
+        adminRiderVerificationApi.getRiders(),
+      ]);
+      setRiders(fleetData);
+      setDbRiders(pendingList);
+      if (fleetData.length > 0 && !selectedRider) {
+        setSelectedRider(fleetData[0]);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadRiders();
   }, []);
+
+  const handleVerifyRider = async (riderId: number, name: string) => {
+    try {
+      await adminRiderVerificationApi.updateRiderVerification(riderId, {
+        verification_status: 'verified',
+        availability_status: 'online',
+      });
+      toast.success(`Rider ${name} verified successfully! Account is now active.`);
+      loadRiders();
+    } catch {
+      toast.error('Failed to verify rider profile');
+    }
+  };
 
   // Filtered List
   const filteredRiders = useMemo(() => {
@@ -331,6 +355,53 @@ export const LogisticsFleetPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── PENDING RIDER APPROVALS BANNER ── */}
+      {dbRiders.some((r) => r.verification_status === 'pending') && (
+        <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
+              <h3 className="text-sm font-head font-bold text-amber-300">
+                Pending Rider Partner Applications ({dbRiders.filter((r) => r.verification_status === 'pending').length})
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-amber-400/80">Action Required</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {dbRiders
+              .filter((r) => r.verification_status === 'pending')
+              .map((rider) => (
+                <div
+                  key={rider.id}
+                  className="p-4 rounded-2xl bg-bg-card border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1 text-xs">
+                    <div className="font-bold text-content-primary flex items-center space-x-2">
+                      <span>{rider.rider_name}</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono text-[10px] uppercase font-bold">
+                        {rider.vehicle_type}
+                      </span>
+                    </div>
+                    <div className="text-content-muted font-mono text-[11px]">📱 Phone: {rider.phone_number}</div>
+                    {rider.nid_no && (
+                      <div className="text-content-muted font-mono text-[11px]">🪪 NID: {rider.nid_no}</div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleVerifyRider(rider.id, rider.rider_name)}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-glow transition-all flex items-center justify-center space-x-1.5 self-start sm:self-auto"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Approve & Verify</span>
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Rider Roster Directory */}
       <div className="space-y-4">

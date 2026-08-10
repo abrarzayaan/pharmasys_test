@@ -186,23 +186,152 @@ export const INITIAL_MOCK_ORDERS: AdminOrder[] = [
   },
 ];
 
+export const transformBackendOrder = (raw: any): AdminOrder => {
+  if (!raw) return raw;
+
+  if (
+    typeof raw.customer_name === 'string' &&
+    Array.isArray(raw.items) &&
+    (raw.items.length === 0 || 'assigned_vendor_id' in raw.items[0])
+  ) {
+    return raw as AdminOrder;
+  }
+
+  const customerUser = raw.customer?.user || {};
+  const addressSnap = raw.address_snapshot || {};
+  const riderUser = raw.assigned_rider?.user || {};
+
+  const customerName =
+    [customerUser.first_name, customerUser.last_name].filter(Boolean).join(' ') ||
+    addressSnap.receiver_name ||
+    customerUser.username ||
+    'Customer';
+
+  const customerPhone =
+    customerUser.phone_number || addressSnap.receiver_phone || 'N/A';
+
+  const shippingAddress =
+    addressSnap.full_address ||
+    (addressSnap.area ? `${addressSnap.area}, ${addressSnap.city || ''}` : 'N/A');
+
+  const city = addressSnap.city || 'Dhaka';
+
+  const riderObj: AdminRider | null = raw.assigned_rider
+    ? {
+        id: raw.assigned_rider.id,
+        name:
+          [riderUser.first_name, riderUser.last_name].filter(Boolean).join(' ') ||
+          riderUser.username ||
+          `Rider #${raw.assigned_rider.id}`,
+        phone: riderUser.phone_number || 'N/A',
+        vehicle_type:
+          (raw.assigned_rider.vehicle_type || 'Motorbike').toUpperCase() === 'BIKE'
+            ? 'Motorbike'
+            : raw.assigned_rider.vehicle_type || 'Motorbike',
+        is_online: raw.assigned_rider.availability_status === 'online',
+        active_workload: 0,
+        rating: 4.8,
+      }
+    : null;
+
+  const items: AdminOrderItem[] = Array.isArray(raw.items)
+    ? raw.items.map((item: any) => {
+        const pSnap = item.product_snapshot || {};
+        return {
+          id: item.id,
+          product_variant_id: item.product_variant || pSnap.variant_id || 0,
+          variant_name: pSnap.variant_name || pSnap.sku || `Variant #${item.product_variant}`,
+          product_name: pSnap.name || pSnap.product_name || `Product #${item.id}`,
+          quantity: Number(item.quantity || 1),
+          unit_price: Number(item.unit_price || 0),
+          total_price: Number(item.total_price || 0),
+          assigned_vendor_id: item.vendor ? item.vendor.id : item.assigned_vendor_id || null,
+          assigned_vendor_name: item.vendor ? item.vendor.name : item.assigned_vendor_name || null,
+          available_vendors: [],
+        };
+      })
+    : [];
+
+  return {
+    id: raw.id,
+    order_number: raw.order_number || `ORD-${raw.id}`,
+    order_status: raw.order_status || 'PLACED',
+    payment_status: raw.payment_status || 'PENDING',
+    payment_method: raw.payment_method || 'COD',
+    subtotal_amount: Number(raw.subtotal || raw.subtotal_amount || 0),
+    delivery_fee: Number(raw.delivery_charge || raw.delivery_fee || 0),
+    discount_amount: Number(raw.discount || raw.discount_amount || 0),
+    total_amount: Number(raw.grand_total || raw.total_amount || 0),
+    customer_name: customerName,
+    customer_phone: customerPhone,
+    shipping_address: shippingAddress,
+    city: city,
+    items: items,
+    assigned_rider: riderObj,
+    requires_prescription: Boolean(raw.requires_prescription),
+    prescription_approved: Boolean(raw.prescription_approved),
+    created_at: raw.placed_at || raw.created_at || new Date().toISOString(),
+    updated_at: raw.updated_at || new Date().toISOString(),
+  };
+};
+
+export interface PaginatedOrdersResponse {
+  count: number;
+  orders: AdminOrder[];
+  totalPages: number;
+  currentPage: number;
+}
+
+export interface OrderStatsResponse {
+  total: number;
+  placed: number;
+  confirmed: number;
+  out_for_delivery: number;
+}
+
 let localOrdersStore: AdminOrder[] = [...INITIAL_MOCK_ORDERS];
 
 export const adminOrderApi = {
   // GET `/api/admin/orders/`
-  getOrders: async (statusFilter?: string, searchQuery?: string): Promise<AdminOrder[]> => {
+  getOrders: async (
+    statusFilter?: string,
+    searchQuery?: string,
+    page: number = 1,
+    pageSize: number = 20,
+    startDate?: string,
+    endDate?: string
+  ): Promise<PaginatedOrdersResponse> => {
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, any> = { page, page_size: pageSize };
       if (statusFilter && statusFilter !== 'ALL') params.order_status = statusFilter;
       if (searchQuery) params.order_number = searchQuery;
+      if (startDate) params.start_date = startDate;
+      if (endDate) params.end_date = endDate;
 
       const res = await api.get('/admin/orders/', { params });
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return localOrdersStore;
+
+      let rawList: any[] = [];
+      let totalCount = 0;
+
+      if (Array.isArray(data)) {
+        rawList = data;
+        totalCount = data.length;
+      } else if (data && Array.isArray(data.results)) {
+        rawList = data.results;
+        totalCount = typeof data.count === 'number' ? data.count : rawList.length;
+      }
+
+      const orders = rawList.map(transformBackendOrder);
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+      return {
+        count: totalCount,
+        orders,
+        totalPages,
+        currentPage: page,
+      };
     } catch {
-      // Fallback mock store filter
       let result = [...localOrdersStore];
       if (statusFilter && statusFilter !== 'ALL') {
         result = result.filter((o) => o.order_status === statusFilter);
@@ -216,7 +345,25 @@ export const adminOrderApi = {
             o.customer_phone.includes(q)
         );
       }
-      return result;
+      const totalCount = result.length;
+      const startIndex = (page - 1) * pageSize;
+      const paginatedOrders = result.slice(startIndex, startIndex + pageSize);
+      return {
+        count: totalCount,
+        orders: paginatedOrders,
+        totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+        currentPage: page,
+      };
+    }
+  },
+
+  // GET `/api/admin/orders/stats/`
+  getOrderStats: async (): Promise<OrderStatsResponse> => {
+    try {
+      const res = await api.get('/admin/orders/stats/');
+      return res.data;
+    } catch {
+      return { total: 0, placed: 0, confirmed: 0, out_for_delivery: 0 };
     }
   },
 
@@ -224,7 +371,7 @@ export const adminOrderApi = {
   getOrderDetail: async (id: number): Promise<AdminOrder> => {
     try {
       const res = await api.get(`/admin/orders/${id}/`);
-      return res.data;
+      return transformBackendOrder(res.data);
     } catch {
       const found = localOrdersStore.find((o) => o.id === id);
       if (!found) throw new Error('Order not found');
@@ -236,7 +383,7 @@ export const adminOrderApi = {
   assignVendors: async (orderId: number, payload: VendorAssignmentPayload): Promise<AdminOrder> => {
     try {
       const res = await api.patch(`/admin/orders/${orderId}/assign-vendor/`, payload);
-      return res.data;
+      return transformBackendOrder(res.data);
     } catch {
       localOrdersStore = localOrdersStore.map((o) => {
         if (o.id === orderId) {
@@ -264,7 +411,7 @@ export const adminOrderApi = {
   assignRider: async (orderId: number, payload: RiderAssignmentPayload): Promise<AdminOrder> => {
     try {
       const res = await api.patch(`/admin/orders/${orderId}/assign-rider/`, payload);
-      return res.data;
+      return transformBackendOrder(res.data);
     } catch {
       const rider = MOCK_RIDERS.find((r) => r.id === payload.rider_id) || MOCK_RIDERS[0];
       localOrdersStore = localOrdersStore.map((o) => {
@@ -281,7 +428,7 @@ export const adminOrderApi = {
   confirmOrder: async (orderId: number): Promise<AdminOrder> => {
     try {
       const res = await api.patch(`/admin/orders/${orderId}/confirm/`);
-      return res.data;
+      return transformBackendOrder(res.data);
     } catch {
       localOrdersStore = localOrdersStore.map((o) => {
         if (o.id === orderId) {
@@ -297,7 +444,7 @@ export const adminOrderApi = {
   updateStatus: async (orderId: number, payload: OrderStatusUpdatePayload): Promise<AdminOrder> => {
     try {
       const res = await api.patch(`/admin/orders/${orderId}/status/`, payload);
-      return res.data;
+      return transformBackendOrder(res.data);
     } catch {
       localOrdersStore = localOrdersStore.map((o) => {
         if (o.id === orderId) {
@@ -319,8 +466,17 @@ export const adminOrderApi = {
     try {
       const res = await api.get('/admin/orders/vendors/');
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
+      const list = Array.isArray(data) ? data : data && Array.isArray(data.results) ? data.results : [];
+      if (list.length > 0) {
+        return list.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          phone: v.phone || '+8801711000000',
+          address: typeof v.address === 'string' ? v.address : v.address?.full_address || 'Main Pharmacy Branch',
+          rating: 4.8,
+          available_stock: v.available_stock || 50,
+        }));
+      }
       return MOCK_VENDORS;
     } catch {
       return MOCK_VENDORS;
@@ -332,8 +488,18 @@ export const adminOrderApi = {
     try {
       const res = await api.get('/admin/orders/riders/');
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
+      const list = Array.isArray(data) ? data : data && Array.isArray(data.results) ? data.results : [];
+      if (list.length > 0) {
+        return list.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          phone: r.phone || '+8801700000000',
+          vehicle_type: r.vehicle_type || 'Motorbike',
+          is_online: Boolean(r.is_online),
+          active_workload: r.active_workload || 0,
+          rating: r.rating || 4.8,
+        }));
+      }
       return MOCK_RIDERS;
     } catch {
       return MOCK_RIDERS;

@@ -12,6 +12,7 @@ import { ModelExplorerPage } from '../pages/ModelExplorerPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { VendorSettlementPage } from '../pages/VendorSettlementPage';
 import { VendorVerificationPage } from '../pages/VendorVerificationPage';
+import { RiderVerificationPage } from '../pages/RiderVerificationPage';
 import { LogisticsFleetPage } from '../pages/LogisticsFleetPage';
 import { AdminSectionPlaceholder } from '../pages/AdminSectionPlaceholder';
 import {
@@ -79,6 +80,10 @@ export const adminRoutes: RouteObject[] = [
           {
             path: 'vendor-verification',
             element: <VendorVerificationPage />,
+          },
+          {
+            path: 'rider-verification',
+            element: <RiderVerificationPage />,
           },
           {
             path: 'vendors',

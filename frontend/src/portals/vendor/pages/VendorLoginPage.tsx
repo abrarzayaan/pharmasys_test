@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { authApi } from '@/api/auth.api';
+import { vendorApi } from '@/api/vendor.api';
 import toast from 'react-hot-toast';
 
 export const VendorLoginPage: React.FC = () => {
@@ -32,10 +33,22 @@ export const VendorLoginPage: React.FC = () => {
         email: user?.email,
         first_name: user?.first_name || 'Vendor',
         last_name: user?.last_name || '',
+        role: user?.role || 'vendor',
       });
 
-      toast.success('Welcome back to Vendor Partner Portal!');
-      navigate('/vendor');
+      // Check vendor profile status immediately
+      try {
+        const profile = await vendorApi.getProfile();
+        if (profile && profile.verification_status === 'verified') {
+          toast.success('Welcome back to Vendor Partner Portal!');
+          navigate('/vendor');
+        } else {
+          toast.error('Your vendor account verification is pending admin approval.');
+          navigate('/vendor/pending');
+        }
+      } catch {
+        navigate('/vendor/pending');
+      }
     } catch (err: any) {
       console.error('Vendor login error:', err);
       const errMsg = err.response?.data?.error || err.response?.data?.detail || 'Invalid phone/username or password.';

@@ -1,12 +1,8 @@
-# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, status
-# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
-# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
-# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
-# pyrefly: ignore [missing-import]
+from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema
 
 from apps.orders.models import Order
@@ -20,12 +16,19 @@ from apps.orders.services.admin_order_service import AdminOrderService
 from apps.orders.permissions import IsAdminUser
 
 
+class AdminOrderPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for admin actions: list, retrieve, assign vendor, assign rider, confirm order, and update order status.
     """
     permission_classes = [IsAuthenticated, IsAdminUser]
     serializer_class = OrderDetailSerializer
+    pagination_class = AdminOrderPagination
 
     def get_queryset(self):
         queryset = Order.objects.select_related(
@@ -34,7 +37,7 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
             "items__product_variant__product",
             "items__vendor__user",
             "status_history__changed_by"
-        )
+        ).order_by("-created_at")
         
         # Filtering query params
         order_status = self.request.query_params.get("order_status")
@@ -48,8 +51,37 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
         order_number = self.request.query_params.get("order_number")
         if order_number:
             queryset = queryset.filter(order_number__icontains=order_number)
+
+        # Date Filtering
+        date = self.request.query_params.get("date")
+        if date:
+            queryset = queryset.filter(created_at__date=date)
+
+        start_date = self.request.query_params.get("start_date")
+        if start_date:
+            queryset = queryset.filter(created_at__date__gte=start_date)
+
+        end_date = self.request.query_params.get("end_date")
+        if end_date:
+            queryset = queryset.filter(created_at__date__lte=end_date)
             
         return queryset
+
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """
+        Return overall count statistics for all orders.
+        """
+        total = Order.objects.count()
+        placed = Order.objects.filter(order_status="PLACED").count()
+        confirmed = Order.objects.filter(order_status="CONFIRMED").count()
+        out_for_delivery = Order.objects.filter(order_status="OUT_FOR_DELIVERY").count()
+        return Response({
+            "total": total,
+            "placed": placed,
+            "confirmed": confirmed,
+            "out_for_delivery": out_for_delivery
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["patch"], url_path="assign-vendor")
     def assign_vendor(self, request, pk=None):
@@ -132,27 +164,27 @@ class AdminVendorListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        vendors = VendorProfile.objects.all()
+        vendors = VendorProfile.objects.filter(status='active', verification_status='verified')
+        if not vendors.exists():
+            vendors = VendorProfile.objects.filter(status='active')
+        if not vendors.exists():
+            vendors = VendorProfile.objects.all()
+
         data = []
         for v in vendors:
-            addr_str = v.address.full_address if v.address else "Main Pharmacy Branch"
+            addr_str = "Main Pharmacy Branch"
+            if v.address:
+                addr_str = getattr(v.address, 'full_address', '') or f"{v.address.area}, {v.address.city}"
             phone_num = v.phone or (getattr(v.user, 'phone_number', '') if v.user else '')
             data.append({
                 "id": v.id,
-                "name": v.name,
+                "name": v.name or (v.user.username if v.user else f"Vendor #{v.id}"),
                 "phone": phone_num or "+8801711000000",
                 "address": addr_str,
                 "username": v.user.username if v.user else f"vendor_{v.id}",
                 "status": v.status,
                 "available_stock": 50,
             })
-        if not data:
-            data = [
-                {"id": 1, "name": "Lazz Pharma (Dhanmondi Hub)", "phone": "+8801711122233", "address": "Dhanmondi 27, Dhaka", "username": "lazz_dhanmondi", "status": "active", "available_stock": 50},
-                {"id": 2, "name": "Tamanna Pharmacy (Gulshan Hub)", "phone": "+8801822334455", "address": "Gulshan 2, Dhaka", "username": "tamanna_gulshan", "status": "active", "available_stock": 30},
-                {"id": 3, "name": "Aroggo Central Depot", "phone": "+8801933445566", "address": "Tejgaon I/A, Dhaka", "username": "aroggo_depot", "status": "active", "available_stock": 120},
-                {"id": 4, "name": "Popular Medicine Store (Uttara)", "phone": "+8801544556677", "address": "Sector 4, Uttara", "username": "popular_uttara", "status": "active", "available_stock": 15},
-            ]
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -160,25 +192,24 @@ class AdminRiderListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        riders = RiderProfile.objects.all()
+        riders = RiderProfile.objects.filter(availability_status='online', verification_status='verified')
+        if not riders.exists():
+            riders = RiderProfile.objects.filter(availability_status='online')
+        if not riders.exists():
+            riders = RiderProfile.objects.all()
+
         data = []
         for r in riders:
-            u_name = f"{r.user.first_name} {r.user.last_name}".strip() if r.user.first_name else r.user.username
+            u_name = f"{r.user.first_name} {r.user.last_name}".strip() if (r.user and (r.user.first_name or r.user.last_name)) else (r.user.username if r.user else f"Rider #{r.id}")
             phone_num = getattr(r.user, 'phone_number', '') if r.user else ''
+            vehicle = (r.vehicle_type or 'Motorbike').capitalize()
             data.append({
                 "id": r.id,
-                "name": f"{u_name} ({r.vehicle_type.capitalize()})",
+                "name": f"{u_name} ({vehicle})",
                 "phone": phone_num or "+8801700000000",
-                "vehicle_type": r.vehicle_type,
+                "vehicle_type": vehicle,
                 "is_online": r.availability_status == 'online',
                 "active_workload": 0,
                 "rating": 4.8,
             })
-        if not data:
-            data = [
-                {"id": 101, "name": "Rahim Uddin (Rider #12)", "phone": "+8801700112233", "vehicle_type": "Motorbike", "is_online": True, "active_workload": 1, "rating": 4.9},
-                {"id": 102, "name": "Shafiqul Islam (Rider #08)", "phone": "+8801800223344", "vehicle_type": "Motorbike", "is_online": True, "active_workload": 0, "rating": 4.8},
-                {"id": 103, "name": "Tanvir Ahmed (Rider #15)", "phone": "+8801900334455", "vehicle_type": "Bicycle", "is_online": True, "active_workload": 3, "rating": 4.7},
-                {"id": 104, "name": "Kamal Hossain (Rider #03)", "phone": "+8801500445566", "vehicle_type": "Delivery Van", "is_online": False, "active_workload": 0, "rating": 4.6},
-            ]
         return Response(data, status=status.HTTP_200_OK)

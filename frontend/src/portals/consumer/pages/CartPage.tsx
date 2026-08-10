@@ -22,7 +22,12 @@ import Skeleton from '@/components/ui/Skeleton';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const { isLoggedIn, user } = useAuthStore();
+  const isPartnerUser = Boolean(
+    user?.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+  );
+  const isConsumerLoggedIn = isLoggedIn && !isPartnerUser;
+
   const {
     cart,
     isLoading,
@@ -39,7 +44,7 @@ export default function CartPage() {
   const items = cart?.items || [];
   const hasPrescriptionItem = items.some((i) => i.is_prescription_required);
 
-  if (!isLoggedIn) {
+  if (!isConsumerLoggedIn) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <div className="max-w-md mx-auto bg-bg-card border border-bg-border rounded-2xl p-8 space-y-4 shadow-card">

@@ -23,7 +23,12 @@ import toast from 'react-hot-toast';
 
 export default function WishlistPage() {
   const navigate = useNavigate();
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const { isLoggedIn, user } = useAuthStore();
+  const isPartnerUser = Boolean(
+    user?.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+  );
+  const isConsumerLoggedIn = isLoggedIn && !isPartnerUser;
+
   const { items: wishlistIds, toggle, clear } = useWishlistStore();
   const { addItem, isAdding, updatingVariantId } = useCart();
 
@@ -48,7 +53,7 @@ export default function WishlistPage() {
   });
 
   const handleAddToCart = (variant: ProductVariantDetail) => {
-    if (!isLoggedIn) {
+    if (!isConsumerLoggedIn) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;

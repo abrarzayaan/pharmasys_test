@@ -21,8 +21,10 @@ export const VendorPendingPage: React.FC = () => {
       const res = await vendorApi.getProfile();
       setProfile(res);
       if (res.verification_status === 'verified') {
-        toast.success('Your vendor account has been verified!');
-        navigate('/vendor');
+        toast.success('Your vendor account has been verified! Unlocking dashboard...');
+        navigate('/vendor', { replace: true });
+      } else {
+        toast('Verification status is still pending admin review.', { icon: '⏳' });
       }
     } catch (err) {
       console.error('Pending status check failed:', err);

@@ -25,15 +25,11 @@ class CartView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        consumer_profile = getattr(request.user, 'consumer_profile', None)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
         cart, created = Cart.objects.get_or_create(
             consumer_profile=consumer_profile,
             defaults={'consumer_profile': consumer_profile},
         )
-
-        if consumer_profile and cart.consumer_profile_id is None:
-            cart.consumer_profile = consumer_profile
-            cart.save(update_fields=['consumer_profile', 'updated_at'])
 
         serializer = self.get_serializer(cart)
 
@@ -57,15 +53,11 @@ class AddToCartView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        consumer_profile = getattr(request.user, 'consumer_profile', None)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
         cart, created = Cart.objects.get_or_create(
             consumer_profile=consumer_profile,
             defaults={'consumer_profile': consumer_profile},
         )
-
-        if consumer_profile and cart.consumer_profile_id is None:
-            cart.consumer_profile = consumer_profile
-            cart.save(update_fields=['consumer_profile', 'updated_at'])
 
         return Response(
             CartSerializer(cart).data,
@@ -80,7 +72,7 @@ class CartItemView(GenericAPIView):
     def get_cart_item(self, variant_id):
         """Return this consumer's cart item for the supplied variant ID."""
 
-        consumer_profile = getattr(self.request.user, 'consumer_profile', None)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=self.request.user)
 
         return CartItem.objects.filter(
             product_variant_id=variant_id,
@@ -112,11 +104,11 @@ class CartItemView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        consumer_profile = getattr(request.user, 'consumer_profile', None)
-        cart = Cart.objects.filter(consumer_profile=consumer_profile).first()
-
-        if not cart:
-            cart = Cart.objects.create(consumer_profile=consumer_profile)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
+        cart, created = Cart.objects.get_or_create(
+            consumer_profile=consumer_profile,
+            defaults={'consumer_profile': consumer_profile},
+        )
 
         return Response(CartSerializer(cart).data)
 
@@ -142,15 +134,11 @@ class CartItemView(GenericAPIView):
 
         serializer.save()
 
-        consumer_profile = getattr(request.user, 'consumer_profile', None)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
         cart, created = Cart.objects.get_or_create(
             consumer_profile=consumer_profile,
             defaults={'consumer_profile': consumer_profile},
         )
-
-        if consumer_profile and cart.consumer_profile_id is None:
-            cart.consumer_profile = consumer_profile
-            cart.save(update_fields=['consumer_profile', 'updated_at'])
 
         return Response(CartSerializer(cart).data)
 
@@ -174,11 +162,9 @@ class ClearCartView(GenericAPIView):
 
     def delete(self, request):
 
-        consumer_profile = getattr(request.user, 'consumer_profile', None)
+        consumer_profile, _ = ConsumerProfile.objects.get_or_create(user=request.user)
         cart = Cart.objects.filter(consumer_profile=consumer_profile).first()
         if cart:
-            # Deleting the cart cascades to its items, giving the user a true
-            # full-cart delete rather than merely deleting its rows manually.
             cart.delete()
 
         return Response(

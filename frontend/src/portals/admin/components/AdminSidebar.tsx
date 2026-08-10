@@ -10,6 +10,7 @@ import {
   Percent,
   Building2,
   Truck,
+  Bike,
   ShieldCheck,
   Database,
   History,
@@ -59,6 +60,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     groupTitle: 'Vendors & Logistics',
     items: [
       { id: 'vendor-verification', label: 'Vendor Verification', path: '/admin/vendor-verification', iconName: 'ShieldCheck', badge: 'NEW', badgeColor: 'amber' },
+      { id: 'rider-verification', label: 'Rider Verification', path: '/admin/rider-verification', iconName: 'Bike', badge: 'NEW', badgeColor: 'cyan' },
       { id: 'vendors', label: 'Vendor Payout Ledger', path: '/admin/vendors', iconName: 'Building2' },
       { id: 'logistics', label: 'Fleet & Rider Tracking', path: '/admin/logistics', iconName: 'Truck' },
     ],
@@ -85,6 +87,7 @@ const renderIcon = (iconName: string) => {
     case 'Percent': return <Percent {...props} />;
     case 'Building2': return <Building2 {...props} />;
     case 'Truck': return <Truck {...props} />;
+    case 'Bike': return <Bike {...props} />;
     case 'ShieldCheck': return <ShieldCheck {...props} />;
     case 'Database': return <Database {...props} />;
     case 'History': return <History {...props} />;

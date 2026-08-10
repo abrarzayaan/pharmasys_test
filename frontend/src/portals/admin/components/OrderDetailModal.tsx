@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   User,
@@ -8,15 +8,13 @@ import {
   Truck,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  ShieldAlert,
   Loader2,
   Check,
-  ChevronDown,
+  Lock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AdminOrder, OrderStatusType, AdminVendor, AdminRider } from '../types/admin.types';
-import { adminOrderApi, MOCK_RIDERS, MOCK_VENDORS } from '../api/adminOrder.api';
+import { adminOrderApi } from '../api/adminOrder.api';
 
 interface OrderDetailModalProps {
   order: AdminOrder;
@@ -39,35 +37,48 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   onOrderUpdated,
 }) => {
   const [order, setOrder] = useState<AdminOrder>(initialOrder);
-  const [vendorList, setVendorList] = useState<AdminVendor[]>(MOCK_VENDORS);
-  const [riderList, setRiderList] = useState<AdminRider[]>(MOCK_RIDERS);
-
-  React.useEffect(() => {
-    adminOrderApi.getVendors().then((data) => {
-      if (data && data.length > 0) setVendorList(data);
-    });
-    adminOrderApi.getRiders().then((data) => {
-      if (data && data.length > 0) setRiderList(data);
-    });
-  }, []);
+  const [vendorList, setVendorList] = useState<AdminVendor[]>([]);
+  const [riderList, setRiderList] = useState<AdminRider[]>([]);
 
   const [selectedVendors, setSelectedVendors] = useState<Record<number, number>>(() => {
     const map: Record<number, number> = {};
     initialOrder.items.forEach((item) => {
       if (item.assigned_vendor_id) {
         map[item.id] = item.assigned_vendor_id;
-      } else if (item.available_vendors && item.available_vendors.length > 0) {
-        map[item.id] = item.available_vendors[0].id;
-      } else {
-        map[item.id] = MOCK_VENDORS[0].id;
       }
     });
     return map;
   });
 
   const [selectedRiderId, setSelectedRiderId] = useState<number>(
-    initialOrder.assigned_rider?.id || MOCK_RIDERS[0].id
+    initialOrder.assigned_rider?.id || 0
   );
+
+  useEffect(() => {
+    adminOrderApi.getVendors().then((data) => {
+      if (data && data.length > 0) {
+        setVendorList(data);
+        setSelectedVendors((prev) => {
+          const map = { ...prev };
+          initialOrder.items.forEach((item) => {
+            if (!map[item.id] && !item.assigned_vendor_id) {
+              map[item.id] = data[0].id;
+            }
+          });
+          return map;
+        });
+      }
+    });
+
+    adminOrderApi.getRiders().then((data) => {
+      if (data && data.length > 0) {
+        setRiderList(data);
+        if (!initialOrder.assigned_rider?.id) {
+          setSelectedRiderId(data[0].id);
+        }
+      }
+    });
+  }, []);
 
   const [isAssigningVendor, setIsAssigningVendor] = useState(false);
   const [isAssigningRider, setIsAssigningRider] = useState(false);
@@ -75,15 +86,22 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<OrderStatusType>(initialOrder.order_status);
 
-  // Check if all items have an assigned vendor
-  const allItemsAssignedVendor = order.items.every(
-    (item) => item.assigned_vendor_id || selectedVendors[item.id]
-  );
-  const riderIsSelected = Boolean(order.assigned_rider || selectedRiderId);
+  // Vendor Assignment Lock Status
+  const allItemsSavedVendor =
+    order.items.length > 0 && order.items.every((item) => Boolean(item.assigned_vendor_id));
+  const allItemsAssignedVendor =
+    order.items.length > 0 &&
+    order.items.every((item) => item.assigned_vendor_id || selectedVendors[item.id]);
+
+  // Rider Lock Status
+  const isRiderFixed = Boolean(order.assigned_rider?.id);
+  const riderIsSelected = Boolean(order.assigned_rider?.id || selectedRiderId);
+
   const canConfirmOrder = allItemsAssignedVendor && riderIsSelected && order.order_status === 'PLACED';
 
   // STEP 2: Save Vendor Assignment
   const handleSaveVendors = async () => {
+    if (allItemsSavedVendor) return;
     setIsAssigningVendor(true);
     try {
       const itemsPayload = Object.entries(selectedVendors).map(([order_item_id, vendor_id]) => ({
@@ -94,7 +112,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
       const updated = await adminOrderApi.assignVendors(order.id, { items: itemsPayload });
       setOrder(updated);
       onOrderUpdated(updated);
-      toast.success('Vendors assigned to order items successfully!');
+      toast.success('Vendors assigned & locked successfully!');
     } catch {
       toast.error('Failed to assign vendors');
     } finally {
@@ -104,12 +122,18 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   // STEP 3: Assign Rider
   const handleSaveRider = async () => {
+    if (isRiderFixed) return;
+    if (!allItemsAssignedVendor) {
+      toast.error('Must select vendor before assigning rider!');
+      return;
+    }
+
     setIsAssigningRider(true);
     try {
       const updated = await adminOrderApi.assignRider(order.id, { rider_id: selectedRiderId });
       setOrder(updated);
       onOrderUpdated(updated);
-      toast.success('Rider assigned to order successfully!');
+      toast.success('Rider assigned & locked! Rider portal updated.');
     } catch {
       toast.error('Failed to assign rider');
     } finally {
@@ -121,14 +145,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   const handleConfirmOrder = async () => {
     setIsConfirming(true);
     try {
-      // First ensure vendor and rider assignment saved if not already
-      await adminOrderApi.assignVendors(order.id, {
-        items: Object.entries(selectedVendors).map(([order_item_id, vendor_id]) => ({
-          order_item_id: Number(order_item_id),
-          vendor_id: Number(vendor_id),
-        })),
-      });
-      await adminOrderApi.assignRider(order.id, { rider_id: selectedRiderId });
+      if (!allItemsSavedVendor) {
+        await adminOrderApi.assignVendors(order.id, {
+          items: Object.entries(selectedVendors).map(([order_item_id, vendor_id]) => ({
+            order_item_id: Number(order_item_id),
+            vendor_id: Number(vendor_id),
+          })),
+        });
+      }
+      if (!isRiderFixed && selectedRiderId) {
+        await adminOrderApi.assignRider(order.id, { rider_id: selectedRiderId });
+      }
 
       const updated = await adminOrderApi.confirmOrder(order.id);
       setOrder(updated);
@@ -141,7 +168,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
     }
   };
 
-  // General Status Update (Processing -> Packed -> Delivery -> Delivered)
+  // General Status Update
   const handleStatusChange = async (targetStatus: OrderStatusType) => {
     setIsUpdatingStatus(true);
     try {
@@ -295,14 +322,21 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 </div>
               </div>
 
-              <button
-                onClick={handleSaveVendors}
-                disabled={isAssigningVendor}
-                className="px-3.5 py-1.5 rounded-xl bg-primary-500/20 hover:bg-primary-500/30 text-primary-300 border border-primary-500/40 text-xs font-semibold flex items-center space-x-1.5 transition-all disabled:opacity-50"
-              >
-                {isAssigningVendor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                <span>Save Vendor Assignments</span>
-              </button>
+              {allItemsSavedVendor ? (
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center space-x-1">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Vendors Fixed & Locked</span>
+                </span>
+              ) : (
+                <button
+                  onClick={handleSaveVendors}
+                  disabled={isAssigningVendor}
+                  className="px-3.5 py-1.5 rounded-xl bg-primary-500/20 hover:bg-primary-500/30 text-primary-300 border border-primary-500/40 text-xs font-semibold flex items-center space-x-1.5 transition-all disabled:opacity-50"
+                >
+                  {isAssigningVendor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Save Vendor Assignments</span>
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -317,35 +351,45 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-bg-border">
-                  {order.items.map((item) => (
-                    <tr key={item.id} className="hover:bg-bg-hover transition-colors">
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-content-primary">{item.product_name}</div>
-                        <div className="text-[11px] text-content-muted font-mono">{item.variant_name}</div>
-                      </td>
-                      <td className="py-3 px-3 font-mono font-bold">{item.quantity}</td>
-                      <td className="py-3 px-3 font-mono text-content-muted">৳ {item.unit_price}</td>
-                      <td className="py-3 px-3 font-mono font-bold text-content-primary">৳ {item.total_price}</td>
-                      <td className="py-3 px-3">
-                        <select
-                          value={selectedVendors[item.id] || ''}
-                          onChange={(e) =>
-                            setSelectedVendors({
-                              ...selectedVendors,
-                              [item.id]: Number(e.target.value),
-                            })
-                          }
-                          className="w-full px-3 py-1.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-primary-500"
-                        >
-                          {(item.available_vendors && item.available_vendors.length > 0 ? item.available_vendors : vendorList).map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name} ({v.available_stock || 50} in stock)
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
+                  {order.items.map((item) => {
+                    const isVendorLocked = Boolean(item.assigned_vendor_id);
+                    return (
+                      <tr key={item.id} className="hover:bg-bg-hover transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-content-primary">{item.product_name}</div>
+                          <div className="text-[11px] text-content-muted font-mono">{item.variant_name}</div>
+                        </td>
+                        <td className="py-3 px-3 font-mono font-bold">{item.quantity}</td>
+                        <td className="py-3 px-3 font-mono text-content-muted">৳ {item.unit_price}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-content-primary">৳ {item.total_price}</td>
+                        <td className="py-3 px-3">
+                          {isVendorLocked ? (
+                            <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center justify-between">
+                              <span>{item.assigned_vendor_name || 'Assigned Vendor'}</span>
+                              <Lock className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
+                            </div>
+                          ) : (
+                            <select
+                              value={selectedVendors[item.id] || ''}
+                              onChange={(e) =>
+                                setSelectedVendors({
+                                  ...selectedVendors,
+                                  [item.id]: Number(e.target.value),
+                                })
+                              }
+                              className="w-full px-3 py-1.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-primary-500"
+                            >
+                              {vendorList.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                  {v.name} ({v.available_stock || 50} in stock)
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -360,58 +404,85 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   <h3 className="text-sm font-head font-bold text-content-primary">
                     STEP 3: Dispatch & Assign Delivery Rider
                   </h3>
-                  <p className="text-xs text-content-muted">Choose an online rider based on workload and vehicle</p>
+                  <p className="text-xs text-content-muted">
+                    {!allItemsAssignedVendor
+                      ? '⚠️ Vendor selection required before assigning rider'
+                      : 'Choose an online rider based on workload and vehicle'}
+                  </p>
                 </div>
               </div>
 
-              <button
-                onClick={handleSaveRider}
-                disabled={isAssigningRider}
-                className="px-3.5 py-1.5 rounded-xl bg-accent-500/20 hover:bg-accent-500/30 text-accent-300 border border-accent-500/40 text-xs font-semibold flex items-center space-x-1.5 transition-all disabled:opacity-50"
-              >
-                {isAssigningRider ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                <span>Assign Rider</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-              <div>
-                <label className="block text-xs font-mono font-bold text-content-muted mb-1.5">
-                  Select Delivery Fleet Rider:
-                </label>
-                <select
-                  value={selectedRiderId}
-                  onChange={(e) => setSelectedRiderId(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-accent-500"
+              {isRiderFixed ? (
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center space-x-1">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Rider Fixed & Locked</span>
+                </span>
+              ) : (
+                <button
+                  onClick={handleSaveRider}
+                  disabled={isAssigningRider || !allItemsAssignedVendor}
+                  className="px-3.5 py-1.5 rounded-xl bg-accent-500/20 hover:bg-accent-500/30 text-accent-300 border border-accent-500/40 text-xs font-semibold flex items-center space-x-1.5 transition-all disabled:opacity-40 disabled:hover:bg-accent-500/20"
                 >
-                  {riderList.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} — {r.vehicle_type} ({r.active_workload || 0} active orders)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Rider Status Snapshot */}
-              {(() => {
-                const currentRider = riderList.find((r) => r.id === selectedRiderId);
-                if (!currentRider) return null;
-                return (
-                  <div className="p-3 rounded-xl bg-bg-surface border border-bg-border flex items-center justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-content-primary">{currentRider.name}</div>
-                      <div className="text-[11px] text-content-muted font-mono">{currentRider.phone}</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-semibold text-[10px]">
-                        ★ {currentRider.rating || 4.8}
-                      </span>
-                      <div className="text-[10px] text-content-muted mt-1">{currentRider.vehicle_type}</div>
-                    </div>
-                  </div>
-                );
-              })()}
+                  {isAssigningRider ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Assign Rider</span>
+                </button>
+              )}
             </div>
+
+            {!allItemsAssignedVendor ? (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Rider assignment is locked. Please select and save vendors for all order items first.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div>
+                  <label className="block text-xs font-mono font-bold text-content-muted mb-1.5">
+                    Select Delivery Fleet Rider:
+                  </label>
+                  {isRiderFixed ? (
+                    <div className="px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center justify-between">
+                      <span>{order.assigned_rider?.name}</span>
+                      <Lock className="w-4 h-4" />
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedRiderId}
+                      onChange={(e) => setSelectedRiderId(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-accent-500"
+                    >
+                      {riderList.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} — {r.vehicle_type} ({r.active_workload || 0} active orders)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Rider Status Snapshot */}
+                {(() => {
+                  const currentRider = isRiderFixed
+                    ? order.assigned_rider
+                    : riderList.find((r) => r.id === selectedRiderId);
+                  if (!currentRider) return null;
+                  return (
+                    <div className="p-3 rounded-xl bg-bg-surface border border-bg-border flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-bold text-content-primary">{currentRider.name}</div>
+                        <div className="text-[11px] text-content-muted font-mono">{currentRider.phone}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-semibold text-[10px]">
+                          ★ {currentRider.rating || 4.8}
+                        </span>
+                        <div className="text-[10px] text-content-muted mt-1">{currentRider.vehicle_type}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
 

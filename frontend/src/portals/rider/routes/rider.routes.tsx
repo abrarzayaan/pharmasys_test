@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { RiderGuard } from '../components/RiderGuard';
 import { RiderLoginPage } from '../pages/RiderLoginPage';
 import { RiderRegisterPage } from '../pages/RiderRegisterPage';
+import { RiderPendingPage } from '../pages/RiderPendingPage';
 import { RiderDashboardPage } from '../pages/RiderDashboardPage';
 import { RiderOrdersPage } from '../pages/RiderOrdersPage';
 import { RiderProfilePage } from '../pages/RiderProfilePage';
@@ -24,6 +25,10 @@ export const riderRoutes: RouteObject[] = [
       {
         index: true,
         element: <Navigate to="/rider/dashboard" replace />,
+      },
+      {
+        path: 'pending',
+        element: <RiderPendingPage />,
       },
       {
         path: 'dashboard',

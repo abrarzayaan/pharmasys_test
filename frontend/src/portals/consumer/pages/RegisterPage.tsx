@@ -55,15 +55,20 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const navigate  = useNavigate();
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const { isLoggedIn, user } = useAuthStore();
   const [showPass,    setShowPass]    = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    if (isLoggedIn) {
-      navigate('/', { replace: true });
+    if (isLoggedIn && user) {
+      const isVendorOrRider = Boolean(
+        user.role && (user.role.toLowerCase() === 'vendor' || user.role.toLowerCase() === 'rider')
+      );
+      if (!isVendorOrRider) {
+        navigate('/', { replace: true });
+      }
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, user, navigate]);
 
   const {
     register,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bike, Phone, Lock, ArrowRight, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 import { authApi } from '@/api/auth.api';
+import { riderApi } from '@/api/rider.api';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
 
@@ -31,8 +32,19 @@ export const RiderLoginPage: React.FC = () => {
         }
       );
 
-      toast.success('Welcome back to Express Rider Portal!');
-      navigate('/rider/dashboard');
+      // Check rider profile status immediately
+      try {
+        const profile = await riderApi.getProfile();
+        if (profile && profile.verification_status === 'verified') {
+          toast.success('Welcome back to Express Rider Portal!');
+          navigate('/rider/dashboard');
+        } else {
+          toast.error('Your rider account verification is pending admin approval.');
+          navigate('/rider/pending');
+        }
+      } catch {
+        navigate('/rider/pending');
+      }
     } catch (err: any) {
       const errMsg = err.response?.data?.detail || err.response?.data?.error || 'Invalid credentials or login failed';
       toast.error(errMsg);

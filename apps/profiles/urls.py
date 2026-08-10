@@ -19,6 +19,8 @@ from apps.profiles.vendor_views import (
 from apps.profiles.admin_views import (
     AdminVendorListView,
     AdminVendorDetailView,
+    AdminRiderListView,
+    AdminRiderDetailView,
 )
 
 urlpatterns = [
@@ -55,6 +57,12 @@ urlpatterns = [
     path('admin/vendors/<int:pk>/', AdminVendorDetailView.as_view(), name='admin_vendor_detail'),
     path('admin-vendors/', AdminVendorListView.as_view(), name='admin_vendors_alias'),
     path('admin-vendors/<int:pk>/', AdminVendorDetailView.as_view(), name='admin_vendors_alias_detail'),
+
+    # Admin Rider Verification & Management Endpoints
+    path('admin/riders/', AdminRiderListView.as_view(), name='admin_rider_list'),
+    path('admin/riders/<int:pk>/', AdminRiderDetailView.as_view(), name='admin_rider_detail'),
+    path('admin-riders/', AdminRiderListView.as_view(), name='admin_riders_alias'),
+    path('admin-riders/<int:pk>/', AdminRiderDetailView.as_view(), name='admin_riders_alias_detail'),
 
     # Address Management
     path('addresses/', UserAddressListCreateView.as_view(), name='user_address_list_create'),
