@@ -320,19 +320,29 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
 
           {/* Status Controls */}
           <div className="p-5 bg-surface-subtle/60 border border-border-default/80 rounded-2xl space-y-4">
-            <h4 className="font-head font-bold text-sm text-content-primary flex items-center space-x-2">
-              <PackageCheck className="w-4 h-4 text-purple-400" />
-              <span>Update Delivery Progress Status</span>
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-head font-bold text-sm text-content-primary flex items-center space-x-2">
+                <PackageCheck className="w-4 h-4 text-purple-400" />
+                <span>Update Delivery Progress Status</span>
+              </h4>
+              {order.payment_method === 'COD' && order.order_status !== 'DELIVERED' && (
+                <span className="text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Collect ৳{order.grand_total} Cash at Delivery</span>
+                </span>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <button
                 onClick={() => handleStatusUpdate('PROCESSING')}
-                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive)}
+                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive) || !['PLACED', 'CONFIRMED'].includes(order.order_status)}
                 className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
                   order.order_status === 'PROCESSING'
                     ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-lg shadow-amber-500/20'
-                    : 'bg-surface-base text-content-secondary border-border-default hover:bg-amber-500/15 hover:text-amber-300'
+                    : ['PLACED', 'CONFIRMED'].includes(order.order_status)
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 font-bold'
+                    : 'bg-surface-base text-content-muted border-border-default'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 1. Collecting
@@ -340,11 +350,13 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
 
               <button
                 onClick={() => handleStatusUpdate('PACKED')}
-                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive)}
+                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive) || order.order_status !== 'PROCESSING'}
                 className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
                   order.order_status === 'PACKED'
                     ? 'bg-purple-500 text-white border-purple-400 font-black shadow-lg shadow-purple-500/20'
-                    : 'bg-surface-base text-content-secondary border-border-default hover:bg-purple-500/15 hover:text-purple-300'
+                    : order.order_status === 'PROCESSING'
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30 font-bold'
+                    : 'bg-surface-base text-content-muted border-border-default'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 2. Picked & Packed
@@ -352,11 +364,13 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
 
               <button
                 onClick={() => handleStatusUpdate('OUT_FOR_DELIVERY')}
-                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive)}
+                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive) || order.order_status !== 'PACKED'}
                 className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
                   order.order_status === 'OUT_FOR_DELIVERY'
                     ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-lg shadow-cyan-500/20'
-                    : 'bg-surface-base text-content-secondary border-border-default hover:bg-cyan-500/15 hover:text-cyan-300'
+                    : order.order_status === 'PACKED'
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/30 font-bold'
+                    : 'bg-surface-base text-content-muted border-border-default'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 3. Out for Delivery
@@ -364,14 +378,16 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
 
               <button
                 onClick={() => handleStatusUpdate('DELIVERED')}
-                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive)}
+                disabled={isSubmitting || !isProfileComplete || Boolean(isAnotherOrderActive) || order.order_status !== 'OUT_FOR_DELIVERY'}
                 className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
                   order.order_status === 'DELIVERED'
                     ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-lg shadow-emerald-500/20'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                    : order.order_status === 'OUT_FOR_DELIVERY'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 font-bold animate-pulse'
+                    : 'bg-surface-base text-content-muted border-border-default'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
-                4. Mark Delivered
+                4. {order.payment_method === 'COD' ? 'Delivered & Collect Cash' : 'Mark Delivered'}
               </button>
             </div>
           </div>

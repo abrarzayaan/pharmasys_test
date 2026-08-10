@@ -171,11 +171,8 @@ class VendorAnalyticsSummaryView(APIView):
         vendor = get_or_create_vendor_profile(request.user)
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Assigned or matching Order Items for this vendor
-        vendor_variant_ids = Inventory.objects.filter(vendor=vendor).values_list('variant_id', flat=True)
-        vendor_items = OrderItem.objects.filter(
-            Q(vendor=vendor) | Q(vendor__isnull=True, product_variant_id__in=vendor_variant_ids)
-        ).distinct()
+        # Assigned Order Items for this vendor
+        vendor_items = OrderItem.objects.filter(vendor=vendor).distinct()
 
         today_items = vendor_items.filter(order__created_at__gte=today_start)
 
@@ -211,9 +208,8 @@ class VendorDispatchedItemsView(APIView):
     def get(self, request):
         vendor = get_or_create_vendor_profile(request.user)
 
-        vendor_variant_ids = Inventory.objects.filter(vendor=vendor).values_list('variant_id', flat=True)
         items_qs = OrderItem.objects.filter(
-            Q(vendor=vendor) | Q(vendor__isnull=True, product_variant_id__in=vendor_variant_ids)
+            vendor=vendor
         ).select_related(
             'order', 'product_variant', 'product_variant__product'
         ).distinct().order_by('-order__created_at')

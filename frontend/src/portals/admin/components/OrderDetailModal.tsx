@@ -101,7 +101,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   // STEP 2: Save Vendor Assignment
   const handleSaveVendors = async () => {
-    if (allItemsSavedVendor) return;
+    if (Object.keys(selectedVendors).length === 0) {
+      toast.error('Please select a vendor for the order items');
+      return;
+    }
     setIsAssigningVendor(true);
     try {
       const itemsPayload = Object.entries(selectedVendors).map(([order_item_id, vendor_id]) => ({
@@ -112,7 +115,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
       const updated = await adminOrderApi.assignVendors(order.id, { items: itemsPayload });
       setOrder(updated);
       onOrderUpdated(updated);
-      toast.success('Vendors assigned & locked successfully!');
+      toast.success('Vendors assigned & updated successfully!');
     } catch {
       toast.error('Failed to assign vendors');
     } finally {
@@ -122,7 +125,6 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   // STEP 3: Assign Rider
   const handleSaveRider = async () => {
-    if (isRiderFixed) return;
     if (!allItemsAssignedVendor) {
       toast.error('Must select vendor before assigning rider!');
       return;
@@ -133,7 +135,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
       const updated = await adminOrderApi.assignRider(order.id, { rider_id: selectedRiderId });
       setOrder(updated);
       onOrderUpdated(updated);
-      toast.success('Rider assigned & locked! Rider portal updated.');
+      toast.success('Rider assigned & updated! Rider portal updated.');
     } catch {
       toast.error('Failed to assign rider');
     } finally {
@@ -145,7 +147,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   const handleConfirmOrder = async () => {
     setIsConfirming(true);
     try {
-      if (!allItemsSavedVendor) {
+      if (Object.keys(selectedVendors).length > 0) {
         await adminOrderApi.assignVendors(order.id, {
           items: Object.entries(selectedVendors).map(([order_item_id, vendor_id]) => ({
             order_item_id: Number(order_item_id),
@@ -153,7 +155,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           })),
         });
       }
-      if (!isRiderFixed && selectedRiderId) {
+      if (selectedRiderId) {
         await adminOrderApi.assignRider(order.id, { rider_id: selectedRiderId });
       }
 
@@ -352,7 +354,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 </thead>
                 <tbody className="divide-y divide-bg-border">
                   {order.items.map((item) => {
-                    const isVendorLocked = Boolean(item.assigned_vendor_id);
+                    const currentVendorId = selectedVendors[item.id] || item.assigned_vendor_id || '';
                     return (
                       <tr key={item.id} className="hover:bg-bg-hover transition-colors">
                         <td className="py-3 px-3">
@@ -363,29 +365,23 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                         <td className="py-3 px-3 font-mono text-content-muted">৳ {item.unit_price}</td>
                         <td className="py-3 px-3 font-mono font-bold text-content-primary">৳ {item.total_price}</td>
                         <td className="py-3 px-3">
-                          {isVendorLocked ? (
-                            <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center justify-between">
-                              <span>{item.assigned_vendor_name || 'Assigned Vendor'}</span>
-                              <Lock className="w-3.5 h-3.5 ml-2 flex-shrink-0" />
-                            </div>
-                          ) : (
-                            <select
-                              value={selectedVendors[item.id] || ''}
-                              onChange={(e) =>
-                                setSelectedVendors({
-                                  ...selectedVendors,
-                                  [item.id]: Number(e.target.value),
-                                })
-                              }
-                              className="w-full px-3 py-1.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-primary-500"
-                            >
-                              {vendorList.map((v) => (
-                                <option key={v.id} value={v.id}>
-                                  {v.name} ({v.available_stock || 50} in stock)
-                                </option>
-                              ))}
-                            </select>
-                          )}
+                          <select
+                            value={currentVendorId}
+                            onChange={(e) =>
+                              setSelectedVendors({
+                                ...selectedVendors,
+                                [item.id]: Number(e.target.value),
+                              })
+                            }
+                            className="w-full px-3 py-1.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-primary-500"
+                          >
+                            <option value="" disabled>-- Select Vendor Pharmacy --</option>
+                            {vendorList.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.name} ({v.available_stock || 50} in stock)
+                              </option>
+                            ))}
+                          </select>
                         </td>
                       </tr>
                     );

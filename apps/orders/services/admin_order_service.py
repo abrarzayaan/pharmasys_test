@@ -176,33 +176,40 @@ class AdminOrderService:
     def _validate_vendor(vendor):
         """
         Validate vendor before assignment.
+        Auto-activate & verify vendor if assigned by admin.
         """
-
-        if vendor.status != "active":
+        if vendor.status == "blocked":
             raise ValidationError(
-                "Vendor is not active."
+                "Vendor account is blocked."
             )
 
-        if vendor.verification_status != "verified":
-            raise ValidationError(
-                "Vendor is not verified."
-            )
+        if vendor.status != "active" or vendor.verification_status != "verified":
+            vendor.status = "active"
+            vendor.verification_status = "verified"
+            vendor.save(update_fields=["status", "verification_status"])
 
     @staticmethod
     def _validate_rider(rider):
         """
         Validate rider before assignment.
+        Auto-verify & make online if assigned by admin.
         """
-
-        if rider.verification_status != "verified":
+        if rider.verification_status == "rejected":
             raise ValidationError(
-                "Rider is not verified."
+                "Rider account is rejected."
             )
+
+        updated_fields = []
+        if rider.verification_status != "verified":
+            rider.verification_status = "verified"
+            updated_fields.append("verification_status")
 
         if rider.availability_status != "online":
-            raise ValidationError(
-                "Rider is currently unavailable."
-            )
+            rider.availability_status = "online"
+            updated_fields.append("availability_status")
+
+        if updated_fields:
+            rider.save(update_fields=updated_fields)
 
     @staticmethod
     def _create_status_history(

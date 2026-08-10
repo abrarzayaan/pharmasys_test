@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import BasePermission
 from apps.authentication.models import UserRole
 
@@ -12,13 +13,26 @@ class IsRoleUser(BasePermission):
         # ইউজার লগইন করা আছে কিনা চেক
         if not request.user or not request.user.is_authenticated:
             return False
+
+        # ১. প্রোফাইল রিলেশনশিপ চেক
+        if self.allowed_role == 'rider' and hasattr(request.user, 'rider_profile'):
+            return True
+        if self.allowed_role == 'vendor' and hasattr(request.user, 'vendor_profile'):
+            return True
+        if self.allowed_role == 'consumer' and hasattr(request.user, 'customer_profile'):
+            return True
         
-        # ডাটাবেজ থেকে রোল ভেরিফাই করা
+        # ২. ডাটাবেজ থেকে রোল ভেরিফাই করা
         try:
             user_role = UserRole.objects.get(user=request.user).role.name
-            return user_role == self.allowed_role
+            if user_role == self.allowed_role:
+                return True
         except UserRole.DoesNotExist:
-            return False
+            pass
+
+        # ৩. User.role অ্যাট্রিবিউট চেক
+        role_attr = getattr(request.user, 'role', None)
+        return bool(role_attr and str(role_attr).lower() == self.allowed_role.lower())
 
 # নির্দিষ্ট রোল ভিত্তিক পারমিশন ক্লাস
 class IsConsumer(IsRoleUser):

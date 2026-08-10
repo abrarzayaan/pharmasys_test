@@ -58,7 +58,7 @@ export const RiderOrdersPage: React.FC = () => {
   };
 
   // Find active order if any
-  const activeOrder = orders.find(o => ['PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.order_status));
+  const activeOrder = orders.find(o => ['PLACED', 'CONFIRMED', 'PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.order_status));
 
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase();
@@ -68,7 +68,7 @@ export const RiderOrdersPage: React.FC = () => {
     const matchesSearch = orderNo.includes(q) || custPhone.includes(q) || custName.includes(q);
 
     if (statusFilter === 'active') {
-      return matchesSearch && ['PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(order.order_status);
+      return matchesSearch && ['PLACED', 'CONFIRMED', 'PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(order.order_status);
     }
     if (statusFilter === 'completed') {
       return matchesSearch && order.order_status === 'DELIVERED';
@@ -139,7 +139,7 @@ export const RiderOrdersPage: React.FC = () => {
                   : 'text-content-secondary hover:text-content-primary'
               }`}
             >
-              In Progress ({orders.filter(o => ['PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.order_status)).length})
+              In Progress ({orders.filter(o => ['PLACED', 'CONFIRMED', 'PROCESSING', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.order_status)).length})
             </button>
 
             <button

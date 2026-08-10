@@ -31,6 +31,7 @@ from apps.orders.choices import OrderStatus
 ORDER_STATUS_TRANSITIONS = {
     OrderStatus.PLACED: [
         OrderStatus.CONFIRMED,
+        OrderStatus.PROCESSING,
         OrderStatus.CANCELLED,
     ],
 

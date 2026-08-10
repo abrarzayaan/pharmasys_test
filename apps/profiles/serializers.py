@@ -68,6 +68,25 @@ class VendorProfileSerializer(serializers.ModelSerializer):
 
         instance.save()
 
+        # Synchronize User model fields (phone_number, email, name)
+        user = instance.user
+        if user:
+            updated_user = False
+            if instance.phone and user.phone_number != instance.phone:
+                user.phone_number = instance.phone
+                updated_user = True
+            if instance.email and user.email != instance.email:
+                user.email = instance.email
+                updated_user = True
+            if instance.name:
+                parts = instance.name.strip().split(' ', 1)
+                user.first_name = parts[0]
+                if len(parts) > 1:
+                    user.last_name = parts[1]
+                updated_user = True
+            if updated_user:
+                user.save()
+
         if address_data:
             if instance.address:
                 for attr, value in address_data.items():
@@ -106,14 +125,13 @@ class RiderProfileSerializer(serializers.ModelSerializer):
 
     def get_is_profile_complete(self, obj):
         user = getattr(obj, 'user', None)
-        has_name = bool(user and user.first_name and user.first_name.strip())
-        has_phone = bool(user and user.phone_number and user.phone_number.strip())
-        has_nid = bool(obj.nid_no and obj.nid_no.strip())
+        has_phone = bool(user and user.phone_number and str(user.phone_number).strip())
+        has_nid = bool(obj.nid_no and str(obj.nid_no).strip())
         has_vehicle = bool(obj.vehicle_type)
         if obj.vehicle_type in ['bike', 'car']:
-            has_lic_and_no = bool(obj.license_no and obj.license_no.strip() and obj.vehicle_number and obj.vehicle_number.strip())
-            return bool(has_name and has_phone and has_nid and has_vehicle and has_lic_and_no)
-        return bool(has_name and has_phone and has_nid and has_vehicle)
+            has_lic_and_no = bool(obj.license_no and str(obj.license_no).strip() and obj.vehicle_number and str(obj.vehicle_number).strip())
+            return bool(has_phone and has_nid and has_vehicle and has_lic_and_no)
+        return bool(has_phone and has_nid and has_vehicle)
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', None)

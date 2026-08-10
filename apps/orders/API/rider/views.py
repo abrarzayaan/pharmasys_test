@@ -74,7 +74,7 @@ class RiderOrderViewSet(viewsets.ReadOnlyModelViewSet):
 
         active_order = Order.objects.filter(
             assigned_rider=rider_profile,
-            order_status__in=[OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.OUT_FOR_DELIVERY]
+            order_status__in=[OrderStatus.PLACED, OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.OUT_FOR_DELIVERY]
         ).select_related(
             "customer__user", "assigned_rider__user", "payment"
         ).prefetch_related(
