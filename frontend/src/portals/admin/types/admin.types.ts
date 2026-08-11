@@ -39,7 +39,7 @@ export interface NavItem {
   path: string;
   iconName: string;
   badge?: number | string;
-  badgeColor?: 'emerald' | 'amber' | 'rose' | 'indigo';
+  badgeColor?: 'emerald' | 'amber' | 'rose' | 'indigo' | 'cyan';
   permissionKey?: keyof AdminUserPermissions;
 }
 
@@ -135,12 +135,15 @@ export interface OrderStatusUpdatePayload {
 // ── SECTION 03: PRODUCT VARIANT DYNAMIC PRICING TYPES ─────────────────────────────
 export interface VariantMetaFlags {
   pack_size?: string;
+  dimensions?: { length?: number; width?: number; height?: number; unit?: string } | Record<string, any>;
   is_hot_deal?: boolean;
   is_best_selling?: boolean;
   is_top_rated?: boolean;
   is_featured?: boolean;
   is_quick_access?: boolean;
   is_flash_sale?: boolean;
+  is_genuine?: boolean;
+  [key: string]: any;
 }
 
 export interface AdminVariantItem {
@@ -157,6 +160,10 @@ export interface AdminVariantItem {
   min_order_qty: number;
   max_order_qty?: number;
   status: 'active' | 'hidden';
+  weight?: number;
+  dimensions?: { length?: number; width?: number; height?: number; unit?: string } | any;
+  short_description?: any;
+  long_description?: any;
   meta: VariantMetaFlags;
   image_url?: string;
   created_at?: string;

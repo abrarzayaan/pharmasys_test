@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions
 from apps.products.models import Inventory
 from apps.products.serializers import InventorySerializer
@@ -14,7 +15,10 @@ class InventoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff:
+        if not user or user.is_anonymous:
+            return Inventory.objects.none()
+        if user.is_staff or user.is_superuser:
             return Inventory.objects.all()
-        # ভেন্ডর যেন শুধু নিজের প্রোডাক্ট ভ্যারিয়েন্টের ইনভেন্টরি দেখতে পারে
-        return Inventory.objects.filter(vendor=user)
+        if hasattr(user, 'vendor_profile'):
+            return Inventory.objects.filter(vendor=user.vendor_profile)
+        return Inventory.objects.filter(vendor__user=user)

@@ -10,16 +10,15 @@ class InventorySerializer(serializers.ModelSerializer):
     # ফ্রন্টএন্ড UI-তে প্রোডাক্ট ট্র্যাক করার সুবিধার জন্য রিলেশনাল ডেটা রিড করা
     variant_name = serializers.CharField(source='variant.variant_name', read_only=True)
     product_name = serializers.CharField(source='variant.product.name', read_only=True)
-    vendor_username = serializers.CharField(source='vendor.username', read_only=True)
+    vendor_name = serializers.CharField(source='vendor.name', read_only=True)
 
     class Meta:
         model = Inventory
         fields = [
-            'id', 'vendor', 'vendor_username', 'variant', 'product_name', 'variant_name', 
+            'id', 'vendor', 'vendor_name', 'variant', 'product_name', 'variant_name', 
             'stock_qty', 'reserved_qty', 'damaged_qty', 'reorder_level', 
             'available_stock', 'status', 'updated_at'
         ]
-        # সিকিউরিটির জন্য স্ট্যাটাস সরাসরি ইনপুট নেওয়া হবে না, ব্যাকএন্ড লজিক হ্যান্ডেল করবে
         read_only_fields = ['id', 'status', 'updated_at']
         extra_kwargs = {
             'vendor': {'required': False, 'allow_null': True}
@@ -34,13 +33,11 @@ class InventorySerializer(serializers.ModelSerializer):
         damaged_qty = attrs.get('damaged_qty', self.instance.damaged_qty if self.instance else 0)
         reorder_level = attrs.get('reorder_level', self.instance.reorder_level if self.instance else 10)
 
-        # ১. ডাটা সেফটি চেক: রিজার্ভ বা ড্যামেজ স্টক কখনো টোটাল ফিজিক্যাল স্টকের চেয়ে বেশি হতে পারে না
         if (reserved_qty + damaged_qty) > stock_qty:
             raise serializers.ValidationError({
                 "stock_qty": "Total reserved and damaged stock cannot exceed the actual physical stock qty."
             })
 
-        # ২. অটোমেটিক স্টক স্ট্যাটাস লজিক
         available = stock_qty - (reserved_qty + damaged_qty)
         
         if available <= 0:
@@ -53,11 +50,17 @@ class InventorySerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        """
-        Lead Developer Logic: যদি রিকোয়েস্টে ভেন্ডর উল্লেখ না থাকে তবে লগইনড ইউজারকে অটো-অ্যাসাইন করা
-        """
         request = self.context.get('request')
         if not validated_data.get('vendor') and request and hasattr(request, 'user'):
-            validated_data['vendor'] = request.user
+            from apps.profiles.models import VendorProfile
+            user = request.user
+            if hasattr(user, 'vendor_profile'):
+                validated_data['vendor'] = user.vendor_profile
+            else:
+                vprof, _ = VendorProfile.objects.get_or_create(
+                    user=user,
+                    defaults={'name': f"{user.username} Store", 'slug': f"{user.username}-store", 'status': 'active'}
+                )
+                validated_data['vendor'] = vprof
             
         return super().create(validated_data)

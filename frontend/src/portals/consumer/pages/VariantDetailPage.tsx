@@ -570,59 +570,89 @@ export default function VariantDetailPage() {
               </h3>
 
               {(() => {
-                const longDesc = typeof variant.long_description === 'object' && variant.long_description !== null
-                  ? variant.long_description
+                const longDesc: Record<string, any> = typeof variant.long_description === 'object' && variant.long_description !== null
+                  ? (variant.long_description as Record<string, any>)
                   : typeof variant.long_description === 'string'
                   ? { about: variant.long_description }
                   : {};
 
-                const hasAbout = !!longDesc.about;
-                const highlights: string[] = Array.isArray(longDesc.highlights) ? longDesc.highlights : [];
-                const indications = longDesc.indications;
+                const aboutText = (longDesc.about || '').trim();
+
+                let highlightsList: string[] = [];
+                if (Array.isArray(longDesc.highlights)) {
+                  highlightsList = longDesc.highlights.map((h: any) => String(h).trim()).filter(Boolean);
+                } else if (typeof longDesc.highlights === 'string' && longDesc.highlights.trim()) {
+                  highlightsList = longDesc.highlights.split(/\r?\n|,/).map((s: string) => s.trim()).filter(Boolean);
+                }
+
+                const indicationsText = (longDesc.indications || '').trim();
+
+                const knownKeys = ['about', 'highlights', 'indications'];
+                const extraKeys = Object.entries(longDesc).filter(([k, v]) => !knownKeys.includes(k) && v !== null && v !== '');
+
+                const hasAnyOverviewContent = aboutText || highlightsList.length > 0 || indicationsText || extraKeys.length > 0;
+
+                if (!hasAnyOverviewContent) {
+                  return (
+                    <div className="p-6 text-center text-content-muted text-xs bg-bg-surface/40 rounded-2xl border border-bg-border">
+                      No detailed overview available for this product variant.
+                    </div>
+                  );
+                }
 
                 return (
                   <div className="space-y-4">
-                    <p className="text-content-secondary leading-relaxed">
-                      {hasAbout
-                        ? longDesc.about
-                        : `${variant.product_name} (${variant.variant_name}) is manufactured by ${variant.brand_name || 'Pharmaceutical Company'} to meet strict quality and safety standards. Formulated with high-potency ingredients, it offers effective relief and therapeutic benefit.`}
-                    </p>
+                    {aboutText && (
+                      <p className="text-content-secondary leading-relaxed text-sm">
+                        {aboutText}
+                      </p>
+                    )}
 
-                    {indications && (
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1">
-                        <span className="font-bold text-content-primary text-xs uppercase tracking-wider">
-                          Indications / Uses
-                        </span>
-                        <p className="text-content-muted text-xs leading-relaxed">{indications}</p>
+                    {(highlightsList.length > 0 || indicationsText) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {/* Key Highlights & Features */}
+                        {highlightsList.length > 0 && (
+                          <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-2">
+                            <span className="font-bold text-content-primary flex items-center gap-1.5 text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-success" /> Key Highlights & Features
+                            </span>
+                            <ul className="list-disc list-inside space-y-1.5 text-content-muted text-xs">
+                              {highlightsList.map((hl: string, idx: number) => (
+                                <li key={idx}>{hl}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Quick Medical Note / Indications */}
+                        {indicationsText && (
+                          <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-2">
+                            <span className="font-bold text-content-primary flex items-center gap-1.5 text-xs">
+                              <Info className="w-4 h-4 text-primary-400" /> Quick Medical Note / Indications
+                            </span>
+                            <p className="text-content-muted text-xs leading-relaxed">
+                              {indicationsText}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-2">
-                        <span className="font-bold text-content-primary flex items-center gap-1.5 text-xs">
-                          <CheckCircle2 className="w-4 h-4 text-success" /> Key Highlights & Features
-                        </span>
-                        <ul className="list-disc list-inside space-y-1 text-content-muted text-xs">
-                          {highlights.length > 0
-                            ? highlights.map((hl: string, idx: number) => <li key={idx}>{hl}</li>)
-                            : (
-                              <>
-                                <li>Certified formulation with guaranteed efficacy</li>
-                                <li>Packaged in tamper-proof hygienic blister/container</li>
-                                <li>Approved by Bangladesh Directorate General of Drug Administration (DGDA)</li>
-                              </>
-                            )}
-                        </ul>
+                    {/* Dynamic Extra Overview Keys */}
+                    {extraKeys.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {extraKeys.map(([key, val]) => (
+                          <div key={key} className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1">
+                            <span className="font-bold text-content-primary text-xs uppercase tracking-wider capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </span>
+                            <p className="text-content-muted text-xs leading-relaxed">
+                              {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-2">
-                        <span className="font-bold text-content-primary flex items-center gap-1.5 text-xs">
-                          <Info className="w-4 h-4 text-primary-400" /> Quick Medical Note
-                        </span>
-                        <p className="text-content-muted text-xs leading-relaxed">
-                          Always consult your physician or pharmacist before starting any new medication. Ensure you follow prescribed dosage instructions carefully.
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
               })()}
@@ -659,26 +689,70 @@ export default function VariantDetailPage() {
                       <td className="py-2.5 px-4 text-mono text-content-secondary">{variant.barcode}</td>
                     </tr>
                   )}
-                  <tr className="border-b border-bg-border/60">
-                    <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
-                      Brand
-                    </td>
-                    <td className="py-2.5 px-4 text-content-secondary">{variant.brand_name || 'N/A'}</td>
-                  </tr>
-                  <tr className="border-b border-bg-border/60">
-                    <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
-                      Category
-                    </td>
-                    <td className="py-2.5 px-4 text-content-secondary">{variant.category_name || 'N/A'}</td>
-                  </tr>
+                  {variant.brand_name && (
+                    <tr className="border-b border-bg-border/60">
+                      <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
+                        Brand
+                      </td>
+                      <td className="py-2.5 px-4 text-content-secondary">{variant.brand_name}</td>
+                    </tr>
+                  )}
+                  {variant.category_name && (
+                    <tr className="border-b border-bg-border/60">
+                      <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
+                        Category
+                      </td>
+                      <td className="py-2.5 px-4 text-content-secondary">{variant.category_name}</td>
+                    </tr>
+                  )}
                   {variant.weight && (
-                    <tr>
+                    <tr className="border-b border-bg-border/60">
                       <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
                         Weight
                       </td>
                       <td className="py-2.5 px-4 text-content-secondary">{variant.weight} kg</td>
                     </tr>
                   )}
+                  {(() => {
+                    const dims = (variant as any).dimensions || (variant.meta as any)?.dimensions;
+                    if (dims && typeof dims === 'object' && (dims.length || dims.width || dims.height)) {
+                      return (
+                        <tr className="border-b border-bg-border/60">
+                          <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50">
+                            Dimensions
+                          </td>
+                          <td className="py-2.5 px-4 text-content-secondary">
+                            {dims.length || 0} × {dims.width || 0} × {dims.height || 0} {dims.unit || 'cm'}
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Render Dynamic Non-Boolean Meta JSON Key-Values */}
+                  {variant.meta && Object.entries(variant.meta).map(([key, val]) => {
+                    if (typeof val === 'boolean' || key.startsWith('is_') || key === 'dimensions') {
+                      return null;
+                    }
+                    if (val === null || val === '') return null;
+
+                    let displayVal = '';
+                    if (typeof val === 'object' && val !== null) {
+                      displayVal = JSON.stringify(val);
+                    } else {
+                      displayVal = String(val);
+                    }
+
+                    return (
+                      <tr key={key} className="border-b border-bg-border/60">
+                        <td className="py-2.5 px-4 font-bold text-content-primary bg-bg-surface/50 capitalize">
+                          {key.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-2.5 px-4 text-content-secondary">{displayVal}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -691,60 +765,83 @@ export default function VariantDetailPage() {
               </h3>
 
               {(() => {
-                const shortDesc = typeof variant.short_description === 'object' && variant.short_description !== null
-                  ? variant.short_description
+                const shortDesc: Record<string, any> = typeof variant.short_description === 'object' && variant.short_description !== null
+                  ? (variant.short_description as Record<string, any>)
                   : typeof variant.short_description === 'string'
                   ? { usage: variant.short_description }
                   : {};
 
-                const hasStructured = Object.keys(shortDesc).length > 0;
+                const standardKeys = ['dosage', 'storage', 'warnings', 'side_effects'];
+                const extraKeys = Object.entries(shortDesc).filter(([k, v]) => !standardKeys.includes(k) && v !== null && v !== '');
 
-                if (!hasStructured) {
+                const dosage = (shortDesc.dosage || '').trim();
+                const storage = (shortDesc.storage || '').trim();
+                const warnings = (shortDesc.warnings || '').trim();
+                const sideEffects = (shortDesc.side_effects || '').trim();
+
+                const hasAnyContent = dosage || storage || warnings || sideEffects || extraKeys.length > 0;
+
+                if (!hasAnyContent) {
                   return (
-                    <ul className="list-disc list-inside space-y-2 text-content-muted">
-                      <li>Take this medicine strictly in the dose and duration as advised by your doctor.</li>
-                      <li>Do not crush, chew, or break tablets/capsules unless instructed by a physician.</li>
-                      <li>Store in a cool, dry place away from direct heat, sunlight, and moisture.</li>
-                      <li>Keep out of reach and sight of children at all times.</li>
-                    </ul>
+                    <div className="p-6 text-center text-content-muted text-xs bg-bg-surface/40 rounded-2xl border border-bg-border">
+                      No usage or storage advice available for this product variant.
+                    </div>
                   );
                 }
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {shortDesc.dosage && (
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
-                        <span className="font-bold text-primary-400 text-xs flex items-center gap-1.5">
-                          <Pill className="w-4 h-4" /> Dosage & Administration
-                        </span>
-                        <p className="text-content-secondary text-xs leading-relaxed">{shortDesc.dosage}</p>
-                      </div>
-                    )}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {dosage && (
+                        <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
+                          <span className="font-bold text-primary-400 text-xs flex items-center gap-1.5">
+                            <Pill className="w-4 h-4" /> Dosage & Administration
+                          </span>
+                          <p className="text-content-secondary text-xs leading-relaxed">{dosage}</p>
+                        </div>
+                      )}
 
-                    {shortDesc.storage && (
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
-                        <span className="font-bold text-accent-400 text-xs flex items-center gap-1.5">
-                          <ShieldCheck className="w-4 h-4" /> Storage Advice
-                        </span>
-                        <p className="text-content-secondary text-xs leading-relaxed">{shortDesc.storage}</p>
-                      </div>
-                    )}
+                      {storage && (
+                        <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
+                          <span className="font-bold text-accent-400 text-xs flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4" /> Storage Advice
+                          </span>
+                          <p className="text-content-secondary text-xs leading-relaxed">{storage}</p>
+                        </div>
+                      )}
 
-                    {shortDesc.warnings && (
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
-                        <span className="font-bold text-amber-400 text-xs flex items-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4" /> Warnings & Precautions
-                        </span>
-                        <p className="text-content-secondary text-xs leading-relaxed">{shortDesc.warnings}</p>
-                      </div>
-                    )}
+                      {warnings && (
+                        <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
+                          <span className="font-bold text-amber-400 text-xs flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4" /> Warnings & Precautions
+                          </span>
+                          <p className="text-content-secondary text-xs leading-relaxed">{warnings}</p>
+                        </div>
+                      )}
 
-                    {shortDesc.side_effects && (
-                      <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
-                        <span className="font-bold text-danger-400 text-xs flex items-center gap-1.5">
-                          <Info className="w-4 h-4" /> Side Effects
-                        </span>
-                        <p className="text-content-secondary text-xs leading-relaxed">{shortDesc.side_effects}</p>
+                      {sideEffects && (
+                        <div className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
+                          <span className="font-bold text-danger-400 text-xs flex items-center gap-1.5">
+                            <Info className="w-4 h-4" /> Side Effects
+                          </span>
+                          <p className="text-content-secondary text-xs leading-relaxed">{sideEffects}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dynamic Extra Usage Keys */}
+                    {extraKeys.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-bg-border/50">
+                        {extraKeys.map(([key, val]) => (
+                          <div key={key} className="p-4 rounded-2xl bg-bg-surface border border-bg-border space-y-1.5">
+                            <span className="font-bold text-content-primary text-xs flex items-center gap-1.5 capitalize">
+                              <Info className="w-4 h-4 text-primary-400" /> {key.replace(/_/g, ' ')}
+                            </span>
+                            <p className="text-content-secondary text-xs leading-relaxed">
+                              {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

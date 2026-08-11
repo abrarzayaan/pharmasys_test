@@ -204,45 +204,202 @@ let localProductsStore: { id: number; name: string; category_name: string }[] = 
   { id: 6, name: 'Maxpro 40mg Esomeprazole', category_name: 'Gastric & Digestive Care' },
 ];
 
-export const adminCatalogApi = {
-  // GET Categories List
-  getCategories: async (): Promise<{ id: number; name: string }[]> => {
-    try {
-      const res = await api.get('/products/categories/');
-      const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return localCategoriesStore;
-    } catch {
-      return localCategoriesStore;
-    }
-  },
+export interface BrandItem {
+  id: number;
+  name: string;
+  slug?: string;
+  logo?: string | null;
+  status: 'active' | 'hidden' | string;
+  metadata?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
 
-  // GET Brands List
+export interface CategoryItem {
+  id: number;
+  name: string;
+  slug?: string;
+  parent?: number | null;
+  image?: string | null;
+  icon?: string | null;
+  sort_order?: number;
+  status: 'active' | 'hidden' | string;
+  metadata?: Record<string, any>;
+  children?: CategoryItem[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductItem {
+  id: number;
+  name: string;
+  slug?: string;
+  category: number;
+  category_name?: string;
+  brand?: number | null;
+  brand_name?: string;
+  vendor?: number | null;
+  vendor_username?: string;
+  short_description?: string;
+  long_description?: string;
+  sku?: string;
+  barcode?: string;
+  thumbnail?: string | null;
+  product_type?: string;
+  is_prescription_required?: boolean;
+  status: 'active' | 'hidden' | string;
+  approval_status?: 'pending' | 'approved' | 'rejected' | string;
+  meta?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductImageItem {
+  id: number;
+  variant: number;
+  variant_name?: string;
+  image_url: string;
+  is_primary: boolean;
+  sort_order?: number;
+  status: 'active' | 'hidden' | string;
+  created_at?: string;
+}
+
+export interface InventoryItem {
+  id: number;
+  vendor?: number | null;
+  vendor_name?: string;
+  variant: number;
+  variant_name?: string;
+  product_name?: string;
+  stock_qty: number;
+  reserved_qty: number;
+  damaged_qty: number;
+  reorder_level: number;
+  available_stock?: number;
+  status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'blocked' | string;
+  updated_at?: string;
+}
+
+export const adminCatalogApi = {
+  // ── BRAND CRUD ──────────────────────────────────────────
   getBrands: async (): Promise<{ id: number; name: string }[]> => {
     try {
-      const res = await api.get('/products/brands/');
+      const res = await api.get('/products/brands/', { params: { page_size: 1000 } });
       const data = res.data;
       if (Array.isArray(data)) return data;
       if (data && Array.isArray(data.results)) return data.results;
-      return [
-        { id: 1, name: 'Beximco Pharmaceuticals' },
-        { id: 2, name: 'Square Pharmaceuticals' },
-        { id: 3, name: 'Incepta Pharmaceuticals' },
-      ];
+      return localBrandsStore;
     } catch {
-      return [
-        { id: 1, name: 'Beximco Pharmaceuticals' },
-        { id: 2, name: 'Square Pharmaceuticals' },
-        { id: 3, name: 'Incepta Pharmaceuticals' },
-      ];
+      return localBrandsStore;
     }
   },
 
-  // GET Products List
+  getBrandsDetailed: async (): Promise<BrandItem[]> => {
+    try {
+      const res = await api.get('/products/brands/', { params: { page_size: 1000 } });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return localBrandsStore.map(b => ({ id: b.id, name: b.name, status: 'active', metadata: {} }));
+    } catch {
+      return localBrandsStore.map(b => ({ id: b.id, name: b.name, status: 'active', metadata: {} }));
+    }
+  },
+
+  createBrand: async (payload: { name: string; status?: string; metadata?: Record<string, any> }): Promise<BrandItem> => {
+    try {
+      const res = await api.post('/products/brands/', payload);
+      if (res.data?.id && res.data?.name) {
+        localBrandsStore.push({ id: res.data.id, name: res.data.name });
+      }
+      return res.data;
+    } catch {
+      const newBrand: BrandItem = { id: Date.now(), name: payload.name, status: payload.status || 'active', metadata: payload.metadata || {} };
+      localBrandsStore.push({ id: newBrand.id, name: newBrand.name });
+      return newBrand;
+    }
+  },
+
+  updateBrand: async (id: number, payload: Partial<{ name: string; status: string; metadata: Record<string, any> }>): Promise<BrandItem> => {
+    try {
+      const res = await api.patch(`/products/brands/${id}/`, payload);
+      return res.data;
+    } catch {
+      localBrandsStore = localBrandsStore.map(b => b.id === id ? { ...b, name: payload.name || b.name } : b);
+      return { id, name: payload.name || 'Brand', status: payload.status || 'active', metadata: payload.metadata || {} };
+    }
+  },
+
+  deleteBrand: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/brands/${id}/`);
+    } catch {
+      localBrandsStore = localBrandsStore.filter(b => b.id !== id);
+    }
+  },
+
+  // ── CATEGORY CRUD ──────────────────────────────────────────
+  getCategories: async (): Promise<{ id: number; name: string }[]> => {
+    try {
+      const res = await api.get('/products/categories/', { params: { page_size: 1000 } });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return localCategoriesStore;
+    } catch {
+      return localCategoriesStore;
+    }
+  },
+
+  getCategoriesDetailed: async (): Promise<CategoryItem[]> => {
+    try {
+      const res = await api.get('/products/categories/', { params: { page_size: 1000 } });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return localCategoriesStore.map(c => ({ id: c.id, name: c.name, status: 'active', metadata: {} }));
+    } catch {
+      return localCategoriesStore.map(c => ({ id: c.id, name: c.name, status: 'active', metadata: {} }));
+    }
+  },
+
+  createCategory: async (payload: CategoryPayload): Promise<CategoryItem> => {
+    try {
+      const res = await api.post('/products/categories/', payload);
+      if (res.data?.id && res.data?.name) {
+        localCategoriesStore.push({ id: res.data.id, name: res.data.name });
+      }
+      return res.data;
+    } catch {
+      const newCat: CategoryItem = { id: Date.now(), name: payload.name, status: payload.status || 'active', metadata: payload.metadata || {} };
+      localCategoriesStore.push({ id: newCat.id, name: newCat.name });
+      return newCat;
+    }
+  },
+
+  updateCategory: async (id: number, payload: Partial<CategoryPayload>): Promise<CategoryItem> => {
+    try {
+      const res = await api.patch(`/products/categories/${id}/`, payload);
+      return res.data;
+    } catch {
+      localCategoriesStore = localCategoriesStore.map(c => c.id === id ? { ...c, name: payload.name || c.name } : c);
+      return { id, name: payload.name || 'Category', status: payload.status || 'active', metadata: payload.metadata || {} };
+    }
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/categories/${id}/`);
+    } catch {
+      localCategoriesStore = localCategoriesStore.filter(c => c.id !== id);
+    }
+  },
+
+  // ── PRODUCT CRUD ──────────────────────────────────────────
   getProducts: async (): Promise<{ id: number; name: string; category_name: string }[]> => {
     try {
-      const res = await api.get('/products/products/');
+      const res = await api.get('/products/products/', { params: { page_size: 1000 } });
       const data = res.data;
       if (Array.isArray(data)) return data;
       if (data && Array.isArray(data.results)) return data.results;
@@ -252,10 +409,85 @@ export const adminCatalogApi = {
     }
   },
 
-  // GET Variants List
+  getProductsDetailed: async (): Promise<ProductItem[]> => {
+    try {
+      const res = await api.get('/products/products/', { params: { page_size: 1000 } });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return localProductsStore.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: 1,
+        category_name: p.category_name,
+        status: 'active',
+        meta: {},
+      }));
+    } catch {
+      return localProductsStore.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: 1,
+        category_name: p.category_name,
+        status: 'active',
+        meta: {},
+      }));
+    }
+  },
+
+  createProduct: async (payload: ProductPayload): Promise<ProductItem> => {
+    try {
+      const res = await api.post('/products/products/', payload);
+      if (res.data?.id && res.data?.name) {
+        localProductsStore.push({
+          id: res.data.id,
+          name: res.data.name,
+          category_name: res.data.category_name || 'General',
+        });
+      }
+      return res.data;
+    } catch {
+      const newProd: ProductItem = {
+        id: Date.now(),
+        name: payload.name,
+        category: payload.category,
+        category_name: 'General',
+        status: payload.status || 'active',
+        meta: payload.meta || {},
+      };
+      localProductsStore.push({ id: newProd.id, name: newProd.name, category_name: newProd.category_name || 'General' });
+      return newProd;
+    }
+  },
+
+  updateProduct: async (id: number, payload: Partial<ProductPayload>): Promise<ProductItem> => {
+    try {
+      const res = await api.patch(`/products/products/${id}/`, payload);
+      return res.data;
+    } catch {
+      localProductsStore = localProductsStore.map(p => p.id === id ? { ...p, name: payload.name || p.name } : p);
+      return {
+        id,
+        name: payload.name || 'Product',
+        category: payload.category || 1,
+        status: payload.status || 'active',
+        meta: payload.meta || {},
+      };
+    }
+  },
+
+  deleteProduct: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/products/${id}/`);
+    } catch {
+      localProductsStore = localProductsStore.filter(p => p.id !== id);
+    }
+  },
+
+  // ── VARIANT CRUD ──────────────────────────────────────────
   getVariants: async (searchQuery?: string, categoryFilter?: string): Promise<AdminVariantItem[]> => {
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, any> = { page_size: 1000 };
       if (searchQuery) params.search = searchQuery;
       if (categoryFilter && categoryFilter !== 'ALL') params.category = categoryFilter;
 
@@ -282,41 +514,6 @@ export const adminCatalogApi = {
     }
   },
 
-  // CREATE Category (POST /api/products/categories/)
-  createCategory: async (payload: CategoryPayload) => {
-    try {
-      const res = await api.post('/products/categories/', payload);
-      if (res.data?.id && res.data?.name) {
-        localCategoriesStore.push({ id: res.data.id, name: res.data.name });
-      }
-      return res.data;
-    } catch (err: unknown) {
-      const newCat = { id: Date.now(), name: payload.name };
-      localCategoriesStore.push(newCat);
-      return newCat;
-    }
-  },
-
-  // CREATE Product (POST /api/products/products/)
-  createProduct: async (payload: ProductPayload) => {
-    try {
-      const res = await api.post('/products/products/', payload);
-      if (res.data?.id && res.data?.name) {
-        localProductsStore.push({
-          id: res.data.id,
-          name: res.data.name,
-          category_name: res.data.category_name || 'General',
-        });
-      }
-      return res.data;
-    } catch (err: unknown) {
-      const newProd = { id: Date.now(), name: payload.name, category_name: 'General' };
-      localProductsStore.push(newProd);
-      return newProd;
-    }
-  },
-
-  // CREATE Variant with Meta Builder (POST /api/products/variants/)
   createVariant: async (payload: VariantPayload): Promise<AdminVariantItem> => {
     try {
       const res = await api.post('/products/variants/', payload);
@@ -360,19 +557,37 @@ export const adminCatalogApi = {
     }
   },
 
-  // UPLOAD Variant Image (POST /api/products/images/)
-  uploadVariantImage: async (formData: FormData) => {
+  updateVariantFull: async (id: number, payload: Partial<VariantPayload>): Promise<AdminVariantItem> => {
     try {
-      const res = await api.post('/products/images/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await api.patch(`/products/variants/${id}/`, payload);
       return res.data;
     } catch {
-      return { id: Date.now(), status: 'active', is_primary: true };
+      localVariantsStore = localVariantsStore.map((v) => {
+        if (v.id === id) {
+          return {
+            ...v,
+            variant_name: payload.variant_name || v.variant_name,
+            sku: payload.sku || v.sku,
+            price: payload.price ?? v.price,
+            sale_price: payload.sale_price !== undefined ? payload.sale_price : v.sale_price,
+            status: payload.status || v.status,
+            meta: payload.meta ? { ...v.meta, ...payload.meta } : v.meta,
+          };
+        }
+        return v;
+      });
+      return localVariantsStore.find((v) => v.id === id)!;
     }
   },
 
-  // PATCH Single Variant Pricing & Meta
+  deleteVariant: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/variants/${id}/`);
+    } catch {
+      localVariantsStore = localVariantsStore.filter(v => v.id !== id);
+    }
+  },
+
   updateVariantPricing: async (
     variantId: number,
     price: number,
@@ -401,7 +616,6 @@ export const adminCatalogApi = {
     }
   },
 
-  // POST Apply Bulk Discount Rule
   applyBulkDiscountRule: async (payload: BulkDiscountRulePayload): Promise<AdminVariantItem[]> => {
     try {
       const res = await api.post('/admin/products/variants/bulk-discount/', payload);
@@ -437,22 +651,112 @@ export const adminCatalogApi = {
     }
   },
 
-  // CREATE Brand (POST /api/products/brands/)
-  createBrand: async (payload: { name: string; status?: string; metadata?: Record<string, any> }) => {
+  // ── PRODUCT IMAGES CRUD ──────────────────────────────────────────
+  getImages: async (variantId?: number): Promise<ProductImageItem[]> => {
     try {
-      const res = await api.post('/products/brands/', payload);
-      if (res.data?.id && res.data?.name) {
-        localBrandsStore.push({ id: res.data.id, name: res.data.name });
-      }
-      return res.data;
+      const params: Record<string, unknown> = { page_size: 1000 };
+      if (variantId) params.variant = variantId;
+      const res = await api.get('/products/images/', { params });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return [];
     } catch {
-      const newBrand = { id: Date.now(), name: payload.name };
-      localBrandsStore.push(newBrand);
-      return newBrand;
+      return [];
     }
   },
 
-  // GET Vendors List
+  uploadVariantImage: async (formData: FormData): Promise<ProductImageItem> => {
+    try {
+      const res = await api.post('/products/images/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } catch {
+      return { id: Date.now(), variant: 1, image_url: '', is_primary: true, status: 'active' };
+    }
+  },
+
+  updateImage: async (id: number, payload: Partial<{ is_primary: boolean; sort_order: number; status: string }>): Promise<ProductImageItem> => {
+    try {
+      const res = await api.patch(`/products/images/${id}/`, payload);
+      return res.data;
+    } catch {
+      return { id, variant: 1, image_url: '', is_primary: payload.is_primary ?? false, status: payload.status || 'active' };
+    }
+  },
+
+  deleteImage: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/images/${id}/`);
+    } catch {
+      // fallback handled
+    }
+  },
+
+  // ── INVENTORY CRUD ──────────────────────────────────────────
+  getInventories: async (): Promise<InventoryItem[]> => {
+    try {
+      const res = await api.get('/products/inventories/', { params: { page_size: 1000 } });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  createInventory: async (payload: {
+    variant: number;
+    vendor?: number | null;
+    stock_qty: number;
+    reserved_qty?: number;
+    damaged_qty?: number;
+    reorder_level?: number;
+  }): Promise<InventoryItem> => {
+    try {
+      const res = await api.post('/products/inventories/', payload);
+      return res.data;
+    } catch {
+      return { id: Date.now(), ...payload, reserved_qty: payload.reserved_qty || 0, damaged_qty: payload.damaged_qty || 0, reorder_level: payload.reorder_level || 10, status: 'in_stock' };
+    }
+  },
+
+  updateInventory: async (
+    id: number,
+    payload: Partial<{
+      stock_qty: number;
+      reserved_qty: number;
+      damaged_qty: number;
+      reorder_level: number;
+    }>
+  ): Promise<InventoryItem> => {
+    try {
+      const res = await api.patch(`/products/inventories/${id}/`, payload);
+      return res.data;
+    } catch {
+      return {
+        id,
+        variant: 1,
+        stock_qty: payload.stock_qty || 0,
+        reserved_qty: payload.reserved_qty || 0,
+        damaged_qty: payload.damaged_qty || 0,
+        reorder_level: payload.reorder_level || 10,
+        status: 'in_stock',
+      };
+    }
+  },
+
+  deleteInventory: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/products/inventories/${id}/`);
+    } catch {
+      // fallback handled
+    }
+  },
+
+  // ── VENDORS LIST ──────────────────────────────────────────
   getVendors: async (): Promise<{ id: number; name: string; username?: string }[]> => {
     try {
       const res = await api.get('/admin/orders/vendors/');
@@ -478,23 +782,6 @@ export const adminCatalogApi = {
         { id: 3, name: 'Aroggo Central Depot', username: 'aroggo_depot' },
         { id: 4, name: 'Popular Medicine Store (Uttara)', username: 'popular_uttara' },
       ];
-    }
-  },
-
-  // CREATE Inventory Batch (POST /api/products/inventories/)
-  createInventory: async (payload: {
-    variant: number;
-    vendor?: number | null;
-    stock_qty: number;
-    reserved_qty?: number;
-    damaged_qty?: number;
-    reorder_level?: number;
-  }) => {
-    try {
-      const res = await api.post('/products/inventories/', payload);
-      return res.data;
-    } catch {
-      return { id: Date.now(), ...payload, status: 'in_stock' };
     }
   },
 };

@@ -1,6 +1,7 @@
 import api from '@/api/axios';
 import type {
   AdminOrder,
+  AdminOrderItem,
   AdminVendor,
   AdminRider,
   VendorAssignmentPayload,
