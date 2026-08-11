@@ -7,10 +7,9 @@ class InventorySerializer(serializers.ModelSerializer):
     # মডেলের কাস্টম @property ফিল্ডটিকে এপিআই রেসপন্সে দেখানোর জন্য Read-Only ফিল্ড
     available_stock = serializers.IntegerField(read_only=True)
     
-    # ফ্রন্টএন্ড UI-তে প্রোডাক্ট ট্র্যাক করার সুবিধার জন্য রিলেশনাল ডেটা রিড করা
-    variant_name = serializers.CharField(source='variant.variant_name', read_only=True)
-    product_name = serializers.CharField(source='variant.product.name', read_only=True)
-    vendor_name = serializers.CharField(source='vendor.name', read_only=True)
+    variant_name = serializers.SerializerMethodField()
+    product_name = serializers.SerializerMethodField()
+    vendor_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Inventory
@@ -23,6 +22,24 @@ class InventorySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'vendor': {'required': False, 'allow_null': True}
         }
+
+    def get_variant_name(self, obj):
+        try:
+            return obj.variant.variant_name if obj.variant else ""
+        except Exception:
+            return ""
+
+    def get_product_name(self, obj):
+        try:
+            return obj.variant.product.name if (obj.variant and obj.variant.product) else ""
+        except Exception:
+            return ""
+
+    def get_vendor_name(self, obj):
+        try:
+            return obj.vendor.name if obj.vendor else ""
+        except Exception:
+            return ""
 
     def validate(self, attrs):
         """

@@ -68,6 +68,8 @@ export default function Header() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const topLevelCategories = (categories || []).filter((c: any) => !c.parent);
+
   // Fetch CMS Announcement Bar
   const { data: announcement } = useQuery({
     queryKey: ['cms-announcement'],
@@ -164,7 +166,7 @@ export default function Header() {
             className="bg-transparent text-content-secondary text-xs font-medium px-4 py-2 border-r border-bg-border focus:outline-none cursor-pointer max-w-[130px] truncate"
           >
             <option value="" className="bg-bg-card text-content-primary">All Categories</option>
-            {categories.map((c: any) => (
+            {topLevelCategories.map((c: any) => (
               <option key={c.id} value={c.id} className="bg-bg-card text-content-primary">
                 {c.name}
               </option>
@@ -340,7 +342,7 @@ export default function Header() {
               <div className="absolute left-0 mt-1 flex z-50">
                 {/* Main Categories Panel */}
                 <div className="w-64 bg-bg-card border border-bg-border rounded-2xl shadow-card p-2 space-y-1">
-                  {categories.map((cat: any) => {
+                  {topLevelCategories.map((cat: any) => {
                     const hasChildren = cat.children && cat.children.length > 0;
                     const isHovered = activeHoverCat === cat.id;
                     return (

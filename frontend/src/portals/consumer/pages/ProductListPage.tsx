@@ -78,6 +78,10 @@ export default function ProductListPage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const topLevelCategories = useMemo(() => {
+    return (categories || []).filter((c: any) => !c.parent);
+  }, [categories]);
+
   // Cached Fetch Brands
   const { data: brands = [] } = useQuery({
     queryKey: ['brands'],
@@ -130,12 +134,17 @@ export default function ProductListPage() {
 
     // Category Filter (if parent category set and no specific subcategory selected)
     if (expandedCatId && !selectedSubcategoryId) {
-      const parentCat = categories.find((c: any) => c.id === expandedCatId);
       const allowedCategoryIds = new Set<number>();
       allowedCategoryIds.add(expandedCatId);
-      if (parentCat && Array.isArray(parentCat.children)) {
-        parentCat.children.forEach((sub: any) => allowedCategoryIds.add(sub.id));
-      }
+      (categories || [])
+        .filter((c: any) => c.id === expandedCatId || c.parent === expandedCatId)
+        .forEach((c: any) => {
+          allowedCategoryIds.add(c.id);
+          if (Array.isArray(c.children)) {
+            c.children.forEach((sub: any) => allowedCategoryIds.add(sub.id));
+          }
+        });
+
       result = result.filter(
         (item) => allowedCategoryIds.has(item.category_id) || allowedCategoryIds.has((item as any).category)
       );
@@ -209,11 +218,24 @@ export default function ProductListPage() {
     rxOnlyFilter;
 
   // Active Category & Subcategory Name
-  const activeCategory = categories.find((c: any) => c.id === expandedCatId);
+  const activeCategory = useMemo(() => {
+    if (!expandedCatId) return null;
+    return (categories || []).find((c: any) => c.id === expandedCatId);
+  }, [categories, expandedCatId]);
+
+  const activeCategoryChildren = useMemo(() => {
+    if (!activeCategory) return [];
+    if (Array.isArray(activeCategory.children) && activeCategory.children.length > 0) {
+      return activeCategory.children;
+    }
+    return (categories || []).filter((c: any) => c.parent === activeCategory.id);
+  }, [activeCategory, categories]);
+
   const activeCategoryName = activeCategory?.name;
   const activeSubcategoryName = useMemo(() => {
     if (!selectedSubcategoryId) return null;
     for (const cat of categories) {
+      if (cat.id === selectedSubcategoryId) return cat.name;
       if (Array.isArray(cat.children)) {
         const sub = cat.children.find((s: any) => s.id === selectedSubcategoryId);
         if (sub) return sub.name;
@@ -292,7 +314,7 @@ export default function ProductListPage() {
         </button>
 
         {/* If a parent Category is selected: Show its Subcategories */}
-        {activeCategory && activeCategory.children && activeCategory.children.length > 0 ? (
+        {activeCategory && activeCategoryChildren.length > 0 ? (
           <>
             <button
               type="button"
@@ -309,7 +331,7 @@ export default function ProductListPage() {
               All {activeCategory.name}
             </button>
 
-            {activeCategory.children.map((sub: any) => {
+            {activeCategoryChildren.map((sub: any) => {
               const isSelected = selectedSubcategoryId === sub.id;
               return (
                 <button
@@ -340,8 +362,8 @@ export default function ProductListPage() {
             })}
           </>
         ) : (
-          /* If No Category is selected: Show Main Categories */
-          categories.map((cat: any) => {
+          /* If No Category is selected: Show Main Top-Level Categories */
+          topLevelCategories.map((cat: any) => {
             const isSelected = expandedCatId === cat.id;
             return (
               <button
@@ -397,9 +419,12 @@ export default function ProductListPage() {
               Categories
             </h4>
             <div className="space-y-1 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-              {categories.map((cat: any) => {
+              {topLevelCategories.map((cat: any) => {
                 const isExpanded = expandedCatId === cat.id;
-                const hasSub = cat.children && cat.children.length > 0;
+                const subcats = (Array.isArray(cat.children) && cat.children.length > 0)
+                  ? cat.children
+                  : (categories || []).filter((c: any) => c.parent === cat.id);
+                const hasSub = subcats.length > 0;
                 return (
                   <div key={cat.id} className="space-y-1">
                     <button
@@ -434,7 +459,7 @@ export default function ProductListPage() {
 
                     {isExpanded && hasSub && (
                       <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
-                        {cat.children.map((sub: any) => {
+                        {subcats.map((sub: any) => {
                           const isSelected = selectedSubcategoryId === sub.id;
                           return (
                             <button
@@ -679,9 +704,12 @@ export default function ProductListPage() {
                 Categories & Subcategories
               </h4>
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
-                {categories.map((cat: any) => {
+                {topLevelCategories.map((cat: any) => {
                   const isExpanded = expandedCatId === cat.id;
-                  const hasSub = cat.children && cat.children.length > 0;
+                  const subcats = (Array.isArray(cat.children) && cat.children.length > 0)
+                    ? cat.children
+                    : (categories || []).filter((c: any) => c.parent === cat.id);
+                  const hasSub = subcats.length > 0;
                   return (
                     <div key={cat.id} className="space-y-1">
                       <button
@@ -708,7 +736,7 @@ export default function ProductListPage() {
 
                       {isExpanded && hasSub && (
                         <div className="pl-3 space-y-1 border-l border-bg-border/60 ml-2 py-1">
-                          {cat.children.map((sub: any) => {
+                          {subcats.map((sub: any) => {
                             const isSelected = selectedSubcategoryId === sub.id;
                             return (
                               <button

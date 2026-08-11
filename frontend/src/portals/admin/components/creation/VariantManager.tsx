@@ -45,6 +45,9 @@ export const VariantManager: React.FC = () => {
   const [barcode, setBarcode] = useState<string>('');
   const [price, setPrice] = useState<number>(50);
   const [salePrice, setSalePrice] = useState<number | ''>('');
+  const [costPrice, setCostPrice] = useState<number | ''>('');
+  const [minOrderQty, setMinOrderQty] = useState<number>(1);
+  const [maxOrderQty, setMaxOrderQty] = useState<number | ''>('');
   const [status, setStatus] = useState<'active' | 'hidden'>('active');
 
   // Overview & Description (long_description JSON)
@@ -104,6 +107,9 @@ export const VariantManager: React.FC = () => {
     setBarcode('');
     setPrice(50);
     setSalePrice('');
+    setCostPrice('');
+    setMinOrderQty(1);
+    setMaxOrderQty('');
     setStatus('active');
     setAbout('Fast-acting formula for effective fever and pain relief.');
     setHighlights('Fast action formula\nGentle on stomach\nApproved by DGDA');
@@ -133,9 +139,12 @@ export const VariantManager: React.FC = () => {
     setProductId(item.product_id || (products.length > 0 ? products[0].id : ''));
     setVariantName(item.variant_name);
     setSku(item.sku);
-    setBarcode('');
+    setBarcode(item.barcode || '');
     setPrice(item.price);
     setSalePrice(item.sale_price !== null ? item.sale_price : '');
+    setCostPrice(item.cost_price !== undefined && item.cost_price !== null ? item.cost_price : '');
+    setMinOrderQty(item.min_order_qty || 1);
+    setMaxOrderQty(item.max_order_qty !== undefined && item.max_order_qty !== null ? item.max_order_qty : '');
     setStatus((item.status as 'active' | 'hidden') || 'active');
 
     // Parse long_description JSON
@@ -261,9 +270,12 @@ export const VariantManager: React.FC = () => {
         product: Number(productId),
         variant_name: variantName,
         sku,
-        barcode: barcode || undefined,
+        barcode: barcode.trim() || undefined,
         price,
         sale_price: salePrice === '' ? null : Number(salePrice),
+        cost_price: costPrice === '' ? null : Number(costPrice),
+        min_order_qty: Number(minOrderQty) || 1,
+        max_order_qty: maxOrderQty === '' ? null : Number(maxOrderQty),
         status,
         dimensions: dimensionsObj,
         short_description: shortDescObj,
@@ -412,9 +424,14 @@ export const VariantManager: React.FC = () => {
                     const meta = item.meta || {};
                     return (
                       <tr key={item.id} className="hover:bg-bg-hover/50 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-mono font-bold text-primary-400">{item.sku}</div>
-                          <div className="text-[10px] font-mono text-content-muted">#{item.id}</div>
+                        <td className="py-3.5 px-4 font-mono">
+                          <div className="font-bold text-primary-400">{item.sku}</div>
+                          {item.barcode && (
+                            <div className="text-[10px] text-indigo-300 font-semibold">
+                              BC: {item.barcode}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-content-muted">#{item.id}</div>
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="font-head font-bold text-content-primary text-sm">
@@ -431,6 +448,16 @@ export const VariantManager: React.FC = () => {
                           {item.sale_price !== null && (
                             <div className="text-emerald-400 font-bold text-[11px]">
                               Sale: ৳{item.sale_price}
+                            </div>
+                          )}
+                          {item.cost_price !== null && item.cost_price !== undefined && (
+                            <div className="text-amber-400 text-[10px]">
+                              Cost: ৳{item.cost_price}
+                            </div>
+                          )}
+                          {(item.min_order_qty > 1 || item.max_order_qty) && (
+                            <div className="text-content-muted text-[10px]">
+                              Qty: Min {item.min_order_qty} {item.max_order_qty ? `| Max ${item.max_order_qty}` : ''}
                             </div>
                           )}
                         </td>
@@ -507,7 +534,7 @@ export const VariantManager: React.FC = () => {
       {/* CREATE / EDIT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl bg-bg-card border border-bg-border rounded-3xl p-6 shadow-glow space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-4xl bg-bg-card border border-bg-border rounded-3xl p-6 shadow-glow space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-bg-border pb-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -518,7 +545,7 @@ export const VariantManager: React.FC = () => {
                     {editingVariant ? `Edit Variant: ${editingVariant.variant_name}` : 'Create Variant & Meta JSON'}
                   </h3>
                   <p className="text-xs text-content-muted">
-                    Set SKU, pack size, price rules, badges & dynamic form specs
+                    Set SKU, Barcode, Pricing, Order Limits, badges & dynamic form specs
                   </p>
                 </div>
               </div>
@@ -531,7 +558,8 @@ export const VariantManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Product, Variant Name, SKU, Barcode */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-mono font-bold text-content-muted mb-1.5">
                     Product Master *
@@ -540,7 +568,7 @@ export const VariantManager: React.FC = () => {
                     required
                     value={productId}
                     onChange={(e) => setProductId(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-emerald-500"
                   >
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -560,7 +588,7 @@ export const VariantManager: React.FC = () => {
                     value={variantName}
                     onChange={(e) => setVariantName(e.target.value)}
                     placeholder="e.g. 10 Pcs Strip"
-                    className="w-full px-4 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-content-primary text-xs font-medium outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -574,13 +602,41 @@ export const VariantManager: React.FC = () => {
                     value={sku}
                     onChange={(e) => setSku(e.target.value.toUpperCase())}
                     placeholder="e.g. NAPA-500-STRIP"
-                    className="w-full px-4 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-primary-400 font-mono font-bold text-xs outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-primary-400 font-mono font-bold text-xs outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold text-content-muted mb-1.5">
+                    Barcode (EAN/UPC)
+                  </label>
+                  <input
+                    type="text"
+                    value={barcode}
+                    onChange={(e) => setBarcode(e.target.value)}
+                    placeholder="e.g. 8901234567890"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-surface border border-bg-border text-indigo-300 font-mono font-bold text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
-              {/* Pricing & Status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-bg-surface border border-bg-border">
+              {/* Financial Pricing & Order Limits */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4 rounded-2xl bg-bg-surface border border-bg-border">
+                <div>
+                  <label className="block text-xs font-mono font-bold text-amber-400 mb-1">
+                    Cost Price (৳)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="Vendor Cost"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-amber-400 font-mono font-bold text-xs outline-none focus:border-emerald-500"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-mono font-bold text-content-muted mb-1">
                     Regular Price (৳) *
@@ -588,24 +644,54 @@ export const VariantManager: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     required
                     value={price}
                     onChange={(e) => setPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary font-mono font-bold text-sm outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary font-mono font-bold text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono font-bold text-content-muted mb-1">
+                  <label className="block text-xs font-mono font-bold text-emerald-400 mb-1">
                     Sale Price (৳)
                   </label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value === '' ? '' : Number(e.target.value))}
-                    placeholder="Optional sale price"
-                    className="w-full px-3.5 py-2 rounded-xl bg-bg-card border border-bg-border text-emerald-400 font-mono font-bold text-sm outline-none focus:border-emerald-500"
+                    placeholder="Offer Price"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-emerald-400 font-mono font-bold text-xs outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold text-content-muted mb-1">
+                    Min Order Qty *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={minOrderQty}
+                    onChange={(e) => setMinOrderQty(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary font-mono font-bold text-xs outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold text-content-muted mb-1">
+                    Max Order Limit
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={maxOrderQty}
+                    onChange={(e) => setMaxOrderQty(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="Max Per Order"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary font-mono font-bold text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -616,10 +702,10 @@ export const VariantManager: React.FC = () => {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as 'active' | 'hidden')}
-                    className="w-full px-3.5 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary text-xs font-medium outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-bg-card border border-bg-border text-content-primary text-xs font-bold outline-none"
                   >
-                    <option value="active">Active (Visible)</option>
-                    <option value="hidden">Hidden (Draft)</option>
+                    <option value="active">Active</option>
+                    <option value="hidden">Hidden</option>
                   </select>
                 </div>
               </div>

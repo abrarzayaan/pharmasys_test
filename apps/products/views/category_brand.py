@@ -45,6 +45,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     """
     queryset = Category.objects.all().prefetch_related('children')
     serializer_class = CategorySerializer
+    pagination_class = StandardResultsSetPagination
     
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'sort_order', 'parent']

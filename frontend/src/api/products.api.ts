@@ -3,7 +3,9 @@ import type { Category, Brand, ProductVariantItem, ProductVariantDetail, Paginat
 
 export const productsApi = {
   getCategories: () =>
-    api.get<Category[] | PaginatedResponse<Category>>('/products/categories/'),
+    api.get<Category[] | PaginatedResponse<Category>>('/products/categories/', {
+      params: { page_size: 1000 },
+    }),
 
   getBrands: () =>
     api.get<Brand[] | PaginatedResponse<Brand>>('/products/brands/'),

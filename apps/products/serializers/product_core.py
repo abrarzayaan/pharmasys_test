@@ -49,7 +49,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Lead Developer Logic: রিকোয়েস্ট ইউজারকে অটোমেটিক ভেন্ডর হিসেবে অ্যাসাইন করা
+        Lead Developer Logic: রিকোয়েস্ট ইউজারকে অটোমেটিক ভেন্ডর হিসেবে অ্যাসাইন করা এবং এডমিন ক্যাটালগ প্রোডাক্ট অটো-অ্যাপ্রুভ করা
         """
         # ভিউ (View) থেকে পাস হওয়া রিকোয়েস্ট অবজেক্ট থেকে কারেন্ট লগইনড ইউজারকে নেওয়া হচ্ছে
         request = self.context.get('request')
@@ -69,4 +69,9 @@ class ProductSerializer(serializers.ModelSerializer):
                 )
                 validated_data['vendor'] = vendor_profile
             
+        # Admin / Catalog creation auto-approve
+        validated_data['approval_status'] = 'approved'
+        if 'status' not in validated_data or not validated_data['status']:
+            validated_data['status'] = 'active'
+
         return super().create(validated_data)

@@ -1,4 +1,5 @@
 # pyrefly: ignore [missing-import]
+from django.db import models
 from rest_framework import generics, permissions
 # pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -40,7 +41,7 @@ class SubCategoryListAPIView(generics.ListAPIView):
 
 class ProductVariantListAPIView(generics.ListAPIView):
     """
-    List all active product variants under a specific sub-category.
+    List all active product variants under a specific category or sub-category branch.
     """
 
     serializer_class = ProductVariantListSerializer
@@ -50,6 +51,13 @@ class ProductVariantListAPIView(generics.ListAPIView):
     def get_queryset(self):
         subcategory_id = self.kwargs.get("subcategory_id")
 
+        # Category standard matching: matches current category OR any sub-categories under it
+        cat_ids = list(
+            Category.objects.filter(
+                models.Q(id=subcategory_id) | models.Q(parent_id=subcategory_id)
+            ).values_list("id", flat=True)
+        )
+
         return (
             ProductVariant.objects.select_related(
                 "product",
@@ -58,11 +66,10 @@ class ProductVariantListAPIView(generics.ListAPIView):
             )
             .prefetch_related("images")
             .filter(
-                product__category_id=subcategory_id,
+                product__category_id__in=cat_ids,
                 product__deleted_at__isnull=True,
-                product__status="active",
-                product__approval_status="approved",
                 status="active",
             )
+            .exclude(product__status="inactive")
             .order_by("price")
         )

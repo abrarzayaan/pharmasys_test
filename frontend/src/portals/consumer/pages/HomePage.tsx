@@ -79,29 +79,35 @@ export default function HomePage() {
   const sideBottomLeftSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_left' && s.is_active) || safeHeroBanners[2];
   const sideBottomRightSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_right' && s.is_active) || safeHeroBanners[3];
 
-  // 1. Quick Access Essentials (Filtered by v.meta?.is_quick_access with randomized selection of 6 items on every view)
+  // 1. Quick Access Essentials (Filtered by v.meta?.is_featured || v.meta?.is_quick_access, limited to max 6)
   const quickAccessVariants = useMemo(() => {
     if (!variants.length) return [];
     
-    // Filter items explicitly marked with meta.is_quick_access === true
-    const marked = variants.filter((v: any) => v.meta?.is_quick_access === true);
+    // Filter items explicitly marked with meta.is_featured === true or meta.is_quick_access === true
+    const marked = variants.filter(
+      (v: any) => v.meta?.is_featured === true || v.meta?.is_quick_access === true
+    );
     
-    // Fallback pool if no variants are explicitly flagged with is_quick_access yet
-    const pool = marked.length > 0 
-      ? marked 
-      : variants.filter((v: any) => v.is_prescription_required || v.meta?.is_best_selling || v.meta?.is_hot_deal);
-    
-    const activePool = pool.length > 0 ? pool : variants;
+    if (marked.length > 0) {
+      return marked.slice(0, 6);
+    }
 
-    // Randomize/Shuffle pool to select 6 random products on each load
-    const shuffled = [...activePool].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 6);
+    // Fallback pool if no variants are explicitly flagged as featured yet
+    const fallback = variants.filter(
+      (v: any) => v.is_prescription_required || v.meta?.is_best_selling || v.meta?.is_hot_deal
+    );
+    
+    return fallback.length > 0 ? fallback.slice(0, 6) : variants.slice(0, 6);
   }, [variants]);
 
   // 2. Regular Sale Products Stream
   const regularSaleVariants = useMemo(() => {
     return variants;
   }, [variants]);
+
+  const topLevelCategories = useMemo(() => {
+    return (categories || []).filter((c: any) => !c.parent);
+  }, [categories]);
 
   const topCategoryIcons = [
     { label: 'Health Care', icon: HeartPulse },
@@ -259,7 +265,7 @@ export default function HomePage() {
 
           <button
             type="button"
-            onClick={() => navigate('/products')}
+            onClick={() => navigate('/products?filter=quick_access')}
             className="text-xs font-bold text-primary-400 hover:underline flex items-center gap-1"
           >
             View All <ChevronRight className="w-3.5 h-3.5" />
@@ -286,7 +292,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── 2. TOP CATEGORIES STRIP (Shows ALL Categories) ── */}
+      {/* ── 2. TOP CATEGORIES STRIP (Shows Top-Level Categories Only) ── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -294,7 +300,7 @@ export default function HomePage() {
               Top Categories
             </h2>
             <p className="text-xs text-content-muted">
-              Browse medicines & health products by categories ({categories.length} total)
+              Browse medicines & health products by categories ({topLevelCategories.length} main categories)
             </p>
           </div>
 
@@ -303,7 +309,7 @@ export default function HomePage() {
             onClick={openCategoryModal}
             className="inline-flex items-center gap-1 text-xs font-bold text-primary-400 hover:text-primary-300 hover:underline px-3 py-1.5 rounded-full bg-primary-600/10 border border-primary-500/20"
           >
-            <span>Dual Tree View</span>
+            <span>Browse All Categories</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -316,8 +322,8 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {/* Show ALL Categories */}
-            {categories.map((cat: any, idx: number) => {
+            {/* Show ONLY Top-Level Parent Categories */}
+            {topLevelCategories.map((cat: any, idx: number) => {
               const IconComp = topCategoryIcons[idx % topCategoryIcons.length].icon;
               return (
                 <div
@@ -342,7 +348,7 @@ export default function HomePage() {
             >
               <Layers className="w-4 h-4" />
               <span className="font-head font-bold text-xs">
-                Dual Tree ({categories.length})
+                All Categories ({topLevelCategories.length})
               </span>
               <ChevronRight className="w-3 h-3" />
             </div>

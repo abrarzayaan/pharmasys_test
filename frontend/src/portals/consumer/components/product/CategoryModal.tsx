@@ -44,11 +44,14 @@ export default function CategoryModal() {
 
   if (!isOpen) return null;
 
+  // Filter only top-level categories (parent is null/undefined) for consumer portal navigation
+  const topLevelCategories = (categories || []).filter((cat: Category) => !cat.parent);
+
   // Auto select first category if none selected
-  const activeCatId = selectedCatId ?? (categories.length > 0 ? categories[0].id : null);
+  const activeCatId = selectedCatId ?? (topLevelCategories.length > 0 ? topLevelCategories[0].id : null);
 
   // Filter categories based on search input
-  const filteredCategories = categories.filter((cat: Category) => {
+  const filteredCategories = topLevelCategories.filter((cat: Category) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     const catMatches = cat.name.toLowerCase().includes(query);
@@ -56,7 +59,7 @@ export default function CategoryModal() {
     return catMatches || subMatches;
   });
 
-  const activeCategory = categories.find((c: Category) => c.id === activeCatId) || filteredCategories[0] || categories[0];
+  const activeCategory = topLevelCategories.find((c: Category) => c.id === activeCatId) || filteredCategories[0] || topLevelCategories[0];
 
   const handleSelectCategory = (catId: number, subId?: number) => {
     closeModal();
@@ -166,17 +169,15 @@ export default function CategoryModal() {
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCatId(cat.id)}
-                      className={`w-full flex items-center justify-between p-2 sm:p-2.5 rounded-2xl text-xs transition-all text-left group ${
-                        isSelected
+                      className={`w-full flex items-center justify-between p-2 sm:p-2.5 rounded-2xl text-xs transition-all text-left group ${isSelected
                           ? 'bg-primary-600 text-white font-bold shadow-glow'
                           : 'text-content-secondary hover:bg-bg-card hover:text-content-primary'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <div
-                          className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-primary-600/10 text-primary-400 group-hover:bg-primary-600/20'
-                          }`}
+                          className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-white/20 text-white' : 'bg-primary-600/10 text-primary-400 group-hover:bg-primary-600/20'
+                            }`}
                         >
                           <IconComp className="w-3.5 h-3.5" />
                         </div>
@@ -186,17 +187,15 @@ export default function CategoryModal() {
                       <div className="hidden sm:flex items-center gap-1 shrink-0">
                         {subCount > 0 && (
                           <span
-                            className={`px-1.5 py-0.5 rounded-full text-[9px] ${
-                              isSelected ? 'bg-white/20 text-white' : 'bg-bg-card text-content-muted'
-                            }`}
+                            className={`px-1.5 py-0.5 rounded-full text-[9px] ${isSelected ? 'bg-white/20 text-white' : 'bg-bg-card text-content-muted'
+                              }`}
                           >
                             {subCount}
                           </span>
                         )}
                         <ChevronRight
-                          className={`w-3.5 h-3.5 transition-transform ${
-                            isSelected ? 'text-white translate-x-0.5' : 'text-content-muted group-hover:text-content-primary'
-                          }`}
+                          className={`w-3.5 h-3.5 transition-transform ${isSelected ? 'text-white translate-x-0.5' : 'text-content-muted group-hover:text-content-primary'
+                            }`}
                         />
                       </div>
                     </button>

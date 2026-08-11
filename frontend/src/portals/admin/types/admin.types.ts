@@ -149,6 +149,7 @@ export interface VariantMetaFlags {
 export interface AdminVariantItem {
   id: number;
   sku: string;
+  barcode?: string;
   product_id: number;
   product_name: string;
   variant_name: string;
@@ -156,9 +157,9 @@ export interface AdminVariantItem {
   brand_name?: string;
   price: number;
   sale_price: number | null;
-  cost_price?: number;
+  cost_price?: number | null;
   min_order_qty: number;
-  max_order_qty?: number;
+  max_order_qty?: number | null;
   status: 'active' | 'hidden';
   weight?: number;
   dimensions?: { length?: number; width?: number; height?: number; unit?: string } | any;
