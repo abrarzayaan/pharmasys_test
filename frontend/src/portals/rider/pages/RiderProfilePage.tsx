@@ -95,16 +95,16 @@ export const RiderProfilePage: React.FC = () => {
         onRefreshProfile={fetchProfileData}
       />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-24 md:pb-8">
         
         {/* Page Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 text-xs font-bold border border-cyan-500/30 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
               <span>LOGISTICS FLEET CREDENTIALS</span>
             </div>
-            <h1 className="font-head font-black text-2xl sm:text-3xl text-content-primary flex items-center space-x-3">
+            <h1 className="font-head font-black text-xl sm:text-3xl text-content-primary flex items-center space-x-2">
               <span>Rider Credentials & Verification</span>
             </h1>
             <p className="text-xs sm:text-sm text-content-muted mt-1">
@@ -112,8 +112,8 @@ export const RiderProfilePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <span className={`px-4 py-2 rounded-2xl text-xs font-black border flex items-center space-x-2 shadow-md ${
+          <div className="flex items-center space-x-2 self-start sm:self-auto shrink-0">
+            <span className={`px-3.5 py-2 rounded-2xl text-xs font-black border flex items-center space-x-2 shadow-md ${
               isProfileComplete
                 ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-300 border-cyan-500/40'
                 : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/40 animate-pulse'
@@ -134,34 +134,34 @@ export const RiderProfilePage: React.FC = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-surface-card/90 border border-border-default/80 rounded-3xl shadow-2xl p-6 sm:p-10">
+        <div className="bg-surface-card/90 border border-border-default/80 rounded-3xl shadow-2xl p-4 sm:p-10">
           {isLoading ? (
-            <div className="p-16 text-center text-content-muted space-y-3">
+            <div className="p-12 text-center text-content-muted space-y-3">
               <Loader2 className="w-9 h-9 animate-spin mx-auto text-cyan-400" />
               <p className="text-xs font-semibold">Loading rider profile from server...</p>
             </div>
           ) : (
-            <form onSubmit={handleSaveProfile} className="space-y-8">
+            <form onSubmit={handleSaveProfile} className="space-y-6 sm:space-y-8">
               
               {/* Personal Avatar Banner */}
-              <div className="p-6 bg-gradient-to-r from-cyan-950/40 via-surface-base/80 to-emerald-950/30 border border-border-default/80 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 p-[1px] shadow-lg shadow-cyan-500/20">
-                    <div className="w-full h-full bg-surface-card rounded-[15px] flex items-center justify-center text-cyan-300 font-head font-black text-2xl">
+              <div className="p-4 sm:p-6 bg-gradient-to-r from-cyan-950/40 via-surface-base/80 to-emerald-950/30 border border-border-default/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 p-[1px] shadow-lg shadow-cyan-500/20 shrink-0">
+                    <div className="w-full h-full bg-surface-card rounded-[15px] flex items-center justify-center text-cyan-300 font-head font-black text-lg sm:text-2xl">
                       {firstName ? firstName[0].toUpperCase() : 'R'}
                     </div>
                   </div>
-                  <div>
-                    <h3 className="font-head font-black text-xl text-content-primary">
+                  <div className="min-w-0">
+                    <h3 className="font-head font-black text-base sm:text-xl text-content-primary truncate">
                       {firstName} {lastName}
                     </h3>
-                    <p className="text-xs text-content-muted font-mono mt-0.5">
+                    <p className="text-[11px] sm:text-xs text-content-muted font-mono mt-0.5 truncate">
                       Rider ID: #{profile?.id} • Fleet Vehicle: <span className="capitalize text-cyan-300 font-bold">{profile?.vehicle_type || 'bike'}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 self-start sm:self-auto shrink-0">
                   <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold uppercase">
                     Status: {profile?.verification_status || 'Verified'}
                   </span>
@@ -321,7 +321,7 @@ export const RiderProfilePage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center space-x-2 px-8 py-3.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-cyan-500/25 transition-transform hover:scale-105 disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-3.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-cyan-500/25 transition-transform hover:scale-105 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

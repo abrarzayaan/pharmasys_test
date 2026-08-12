@@ -192,35 +192,35 @@ export const VendorInventoryPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Boxes className="text-emerald-400" size={28} />
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Boxes className="text-emerald-400 shrink-0" size={24} />
             <span>Pharmacy Stock & Inventory Control</span>
           </h1>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-400">
             Logged-in Store:{' '}
             <strong className="text-emerald-400 font-semibold">{profile?.name || 'Your Store'}</strong>.
             Update live physical quantities for customer orders.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all"
           >
-            <PlusCircle size={16} />
-            <span>+ Add Product Stock</span>
+            <PlusCircle size={15} />
+            <span>+ Add Stock</span>
           </button>
 
           <button
             onClick={fetchInventoryAndProfile}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#12141c] hover:bg-[#1a1d2b] text-gray-300 hover:text-white border border-[#1e2230] text-xs font-semibold transition-all disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#12141c] hover:bg-[#1a1d2b] text-gray-300 hover:text-white border border-[#1e2230] text-xs font-semibold transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin text-emerald-400' : ''} />
-            <span>Refresh Stock</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -247,17 +247,17 @@ export const VendorInventoryPage: React.FC = () => {
       )}
 
       {/* Inventory Table Container */}
-      <div className="bg-[#12141c]/90 backdrop-blur-xl rounded-2xl border border-[#1e2230] p-6 shadow-2xl space-y-5">
+      <div className="bg-[#12141c]/90 backdrop-blur-xl rounded-2xl border border-[#1e2230] p-4 sm:p-6 shadow-2xl space-y-5">
         {/* Filters & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1e2230]">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status:</span>
-            <div className="flex items-center gap-1 bg-[#171a26] p-1 rounded-xl border border-[#24283b]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1e2230]">
+          <div className="flex flex-col xs:flex-row xs:items-center gap-2">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status:</span>
+            <div className="flex flex-wrap items-center gap-1 bg-[#171a26] p-1 rounded-xl border border-[#24283b]">
               {['ALL', 'IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'].map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                     statusFilter === st
                       ? 'bg-emerald-600 text-white shadow-md'
                       : 'text-gray-400 hover:text-white hover:bg-[#202538]'
@@ -270,7 +270,7 @@ export const VendorInventoryPage: React.FC = () => {
           </div>
 
           <div className="relative w-full sm:w-72">
-            <Search size={16} className="absolute left-3 top-3 text-gray-500" />
+            <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
             <input
               type="text"
               placeholder="Search product name, SKU..."
@@ -283,7 +283,7 @@ export const VendorInventoryPage: React.FC = () => {
 
         {/* Stock Inventory Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[750px]">
             <thead>
               <tr className="border-b border-[#1e2230] text-gray-400 font-semibold uppercase tracking-wider">
                 <th className="py-3.5 px-4">Medicine / Variant Info</th>

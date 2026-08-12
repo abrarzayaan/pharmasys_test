@@ -114,34 +114,34 @@ export const VendorProfilePage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Store className="text-emerald-400" size={26} />
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Store className="text-emerald-400 shrink-0" size={24} />
             <span>Store Profile & Settings</span>
           </h1>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-400">
             Manage store branding, contact info, trade license details & physical location.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {profile?.updated_at && (
-            <span className="px-3 py-1 rounded-full bg-[#171a26] text-gray-300 border border-[#2a2e42] text-xs font-medium flex items-center gap-1.5">
-              <Clock size={13} className="text-emerald-400" />
-              <span>Last Updated: {new Date(profile.updated_at).toLocaleString()}</span>
+            <span className="px-2.5 py-1 rounded-full bg-[#171a26] text-gray-300 border border-[#2a2e42] text-[11px] font-medium flex items-center gap-1.5">
+              <Clock size={12} className="text-emerald-400" />
+              <span>Updated: {new Date(profile.updated_at).toLocaleDateString()}</span>
             </span>
           )}
 
-          <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold uppercase flex items-center gap-1.5">
-            <CheckCircle2 size={14} />
-            <span>Status: {profile?.status || 'Active'}</span>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold uppercase flex items-center gap-1.5">
+            <CheckCircle2 size={13} />
+            <span>{profile?.status || 'Active'}</span>
           </span>
         </div>
       </div>
 
       {/* Main Settings Form Card */}
-      <div className="bg-[#12141c]/90 backdrop-blur-xl rounded-2xl border border-[#1e2230] p-6 shadow-xl">
+      <div className="bg-[#12141c]/90 backdrop-blur-xl rounded-2xl border border-[#1e2230] p-4 sm:p-6 shadow-xl">
         <form onSubmit={handleSaveProfile} className="space-y-6">
           {/* Store Info Group */}
           <div>
@@ -337,16 +337,16 @@ export const VendorProfilePage: React.FC = () => {
           </div>
 
           {/* Submit Actions */}
-          <div className="pt-6 border-t border-[#1e2230] flex items-center justify-between">
-            {profile?.updated_at && (
+          <div className="pt-6 border-t border-[#1e2230] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {profile?.updated_at ? (
               <span className="text-xs text-gray-400">
                 Last modified on <span className="text-gray-300 font-semibold">{new Date(profile.updated_at).toLocaleString()}</span>
               </span>
-            )}
+            ) : <div />}
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 ml-auto"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 w-full sm:w-auto"
             >
               <Save size={18} />
               <span>{saving ? 'Saving Modifications...' : 'Save Profile Changes'}</span>

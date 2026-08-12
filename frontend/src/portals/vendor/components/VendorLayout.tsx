@@ -75,63 +75,64 @@ export const VendorLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0b0c10] text-[#e0e6ed] flex flex-col font-sans antialiased">
       {/* ── Top Navigation Header ────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-[#12141c]/90 backdrop-blur-md border-b border-[#1e2230] px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 bg-[#12141c]/90 backdrop-blur-md border-b border-[#1e2230] px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between shadow-lg gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg bg-[#1a1d2b] border border-[#2a2e42] text-gray-300 hover:text-white"
+            className="lg:hidden p-1.5 rounded-lg bg-[#1a1d2b] border border-[#2a2e42] text-gray-300 hover:text-white shrink-0"
+            aria-label="Toggle navigation menu"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
 
-          <Link to="/vendor" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+          <Link to="/vendor" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform shrink-0">
               <div className="w-full h-full bg-[#12141c] rounded-[10px] flex items-center justify-center">
-                <Building2 size={20} className="text-emerald-400" />
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-bold text-sm sm:text-lg tracking-tight text-white group-hover:text-emerald-400 transition-colors truncate block">
                   {vendorProfile?.name || 'PharmaSys Vendor'}
                 </span>
-                <span className="px-2 py-0.5 text-[11px] font-semibold tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
+                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase shrink-0">
                   Partner Portal
                 </span>
               </div>
-              <p className="text-xs text-gray-400 flex items-center gap-1.5">
+              <p className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1.5 truncate">
                 <span>Branch: {vendorProfile?.address?.city || 'Dhaka'}</span>
-                <span>•</span>
-                <span className="capitalize">{vendorProfile?.type || 'Pharmacy'}</span>
+                <span className="hidden xs:inline">•</span>
+                <span className="capitalize hidden xs:inline">{vendorProfile?.type || 'Pharmacy'}</span>
               </p>
             </div>
           </Link>
         </div>
 
         {/* Right Header Status & Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Verification Badge */}
           {loading ? (
-            <div className="h-7 w-24 bg-[#1a1d2b] rounded-full animate-pulse"></div>
+            <div className="h-6 w-20 bg-[#1a1d2b] rounded-full animate-pulse"></div>
           ) : isVerified ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-medium">
-              <CheckCircle2 size={14} />
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-medium">
+              <CheckCircle2 size={13} />
               <span>Verified Store</span>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-medium">
-              <Clock size={14} />
-              <span>Verification Pending</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-medium">
+              <Clock size={13} />
+              <span>Pending</span>
             </div>
           )}
 
           {/* Quick Logout */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1d2b] hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-[#2a2e42] hover:border-rose-500/30 text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#1a1d2b] hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-[#2a2e42] hover:border-rose-500/30 text-xs font-medium transition-all"
             title="Log Out"
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
             <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
@@ -206,9 +207,48 @@ export const VendorLayout: React.FC = () => {
         )}
 
         {/* ── Main View Content Area ────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto bg-[#0b0c10] p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-[#0b0c10] p-3.5 sm:p-6 lg:p-8 pb-20 lg:pb-8">
           <Outlet />
         </main>
+      </div>
+
+      {/* Fixed Mobile Bottom Navigation Bar - App Native UX */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#12141c]/95 backdrop-blur-xl border-t border-[#1e2230] py-2 px-3 flex lg:hidden items-center justify-around text-xs shadow-2xl">
+        <Link
+          to="/vendor"
+          className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition-all ${
+            location.pathname === '/vendor'
+              ? 'text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <LayoutDashboard size={18} />
+          <span className="text-[10px]">Dashboard</span>
+        </Link>
+
+        <Link
+          to="/vendor/inventory"
+          className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition-all ${
+            location.pathname.startsWith('/vendor/inventory')
+              ? 'text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Boxes size={18} />
+          <span className="text-[10px]">Inventory</span>
+        </Link>
+
+        <Link
+          to="/vendor/profile"
+          className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition-all ${
+            location.pathname.startsWith('/vendor/profile')
+              ? 'text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Store size={18} />
+          <span className="text-[10px]">Store Settings</span>
+        </Link>
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ export const VendorLoginPage: React.FC = () => {
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="sm:mx-auto sm:w-full sm:max-max-w-md text-center z-10">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center z-10">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-xl shadow-emerald-500/20 mb-4">
           <div className="w-full h-full bg-[#12141c] rounded-[14px] flex items-center justify-center">
             <Building2 className="w-8 h-8 text-emerald-400" />

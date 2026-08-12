@@ -114,33 +114,31 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
   const currentStepIndex = steps.indexOf(order.order_status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-3xl bg-surface-card border border-border-default/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">      {/* Modal Box */}
+      <div className="relative w-full max-w-3xl bg-surface-card border border-border-default/90 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col my-auto">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-default/80 bg-surface-subtle/80">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 p-[1px] shadow-lg shadow-cyan-500/20">
-              <div className="w-full h-full bg-surface-base rounded-[15px] flex items-center justify-center text-cyan-400">
-                <Truck className="w-6 h-6" />
-              </div>
+        <div className="p-4 sm:p-6 border-b border-border-default/80 bg-surface-subtle/80 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+              <Truck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-head font-black text-xl text-content-primary">
-                  Order #{order.order_number}
+                <h3 className="font-head font-black text-base sm:text-lg text-content-primary">
+                  Delivery Order #{order.order_number}
                 </h3>
-                <span className={`px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
-                  order.order_status === 'DELIVERED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-                  order.order_status === 'OUT_FOR_DELIVERY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' :
-                  order.order_status === 'PACKED' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
-                  'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  order.order_status === 'DELIVERED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  order.order_status === 'OUT_FOR_DELIVERY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                  order.order_status === 'PACKED' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                  'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 }`}>
                   {order.order_status.replace(/_/g, ' ')}
                 </span>
               </div>
-              <p className="text-xs text-content-muted mt-0.5 font-mono">
-                Placed at: {new Date(order.placed_at).toLocaleString()}
+              <p className="text-xs text-content-muted mt-0.5">
+                Placed: {new Date(order.placed_at).toLocaleString()}
               </p>
             </div>
           </div>
@@ -154,7 +152,7 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
 
         {/* Banners for Profile completeness / Active Order lock */}
         {!isProfileComplete && (
-          <div className="mx-6 mt-4 p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-2xl flex items-center space-x-3 text-amber-300 text-xs shadow-md">
+          <div className="mx-4 sm:mx-6 mt-4 p-3.5 sm:p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-2xl flex items-center space-x-3 text-amber-300 text-xs shadow-md">
             <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
             <span>
               <strong>Action Blocked:</strong> Rider Profile Incomplete! Complete your NID & Vehicle info in your profile to enable status updates.
@@ -163,7 +161,7 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
         )}
 
         {isAnotherOrderActive && (
-          <div className="mx-6 mt-4 p-4 bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-500/40 rounded-2xl flex items-center space-x-3 text-rose-300 text-xs shadow-md">
+          <div className="mx-4 sm:mx-6 mt-4 p-3.5 sm:p-4 bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-500/40 rounded-2xl flex items-center space-x-3 text-rose-300 text-xs shadow-md">
             <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
             <span>
               <strong>Single Active Order Restriction:</strong> You are currently delivering Order #{activeOrderNumber}. Complete it before updating this order.
@@ -172,10 +170,10 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
         )}
 
         {/* Modal Scrollable Body */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           
           {/* STEP PROGRESS TIMELINE BAR */}
-          <div className="p-5 bg-surface-base/80 border border-border-default/80 rounded-2xl space-y-3">
+          <div className="p-4 sm:p-5 bg-surface-base/80 border border-border-default/80 rounded-2xl space-y-3">
             <h4 className="text-xs font-bold text-content-secondary uppercase tracking-wider flex items-center justify-between">
               <span>Delivery Pipeline Progress</span>
               <span className="text-cyan-400 font-mono">Step {Math.max(1, currentStepIndex + 1)} of 4</span>
@@ -192,7 +190,7 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
                       isCurrent ? 'bg-gradient-to-r from-cyan-400 to-emerald-400 shadow-md shadow-cyan-500/30' :
                       isPassed ? 'bg-emerald-500' : 'bg-surface-subtle border border-border-default'
                     }`} />
-                    <span className={`text-[11px] font-bold block ${
+                    <span className={`text-[10px] sm:text-[11px] font-bold block truncate ${
                       isCurrent ? 'text-cyan-300' : isPassed ? 'text-emerald-400' : 'text-content-muted'
                     }`}>
                       {stepLabel}
@@ -204,20 +202,20 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
           </div>
 
           {/* Customer & Address Card */}
-          <div className="p-5 bg-surface-subtle/50 border border-border-default/80 rounded-2xl space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-5 bg-surface-subtle/50 border border-border-default/80 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h4 className="font-head font-bold text-sm text-cyan-300 flex items-center space-x-2">
                 <User className="w-4 h-4 text-cyan-400" />
                 <span>Customer & Destination Address</span>
               </h4>
-              <span className={`px-3 py-1 rounded-xl text-xs font-black ${
+              <span className={`self-start sm:self-auto px-3 py-1 rounded-xl text-xs font-black ${
                 order.payment_method === 'COD' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
               }`}>
                 {order.payment_method === 'COD' ? `Collect Cash: ৳${order.grand_total}` : `PREPAID: ৳${order.grand_total}`}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
               <div>
                 <span className="text-content-muted font-medium">Receiver Name:</span>
                 <p className="font-bold text-content-primary text-sm mt-0.5">{customerName}</p>
@@ -262,10 +260,10 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
             </h4>
 
             {Object.entries(vendorGroups).map(([vId, group]) => (
-              <div key={vId} className="p-5 bg-surface-subtle/30 border border-border-default/80 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between pb-3 border-b border-border-default/60">
+              <div key={vId} className="p-4 sm:p-5 bg-surface-subtle/30 border border-border-default/80 rounded-2xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-default/60">
                   <div>
-                    <h5 className="font-bold text-sm text-emerald-400 flex items-center space-x-2">
+                    <h5 className="font-bold text-sm text-emerald-400 flex items-center space-x-2 flex-wrap gap-1">
                       <span>{group.vendor_name}</span>
                       <span className="text-[10px] px-2.5 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-full font-mono uppercase border border-emerald-500/30">
                         {group.vendor_type}
@@ -284,7 +282,7 @@ export const RiderOrderDetailModal: React.FC<RiderOrderDetailModalProps> = ({
                   {group.vendor_phone && (
                     <a
                       href={`tel:${group.vendor_phone}`}
-                      className="px-3 py-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold flex items-center space-x-1.5 hover:bg-cyan-500/30 transition-all shrink-0"
+                      className="self-start sm:self-auto px-3 py-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold flex items-center space-x-1.5 hover:bg-cyan-500/30 transition-all shrink-0"
                     >
                       <Phone className="w-3.5 h-3.5" />
                       <span>Call Store</span>

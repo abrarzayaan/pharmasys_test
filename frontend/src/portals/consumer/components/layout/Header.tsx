@@ -129,27 +129,27 @@ export default function Header() {
       )}
 
       {/* ── MAIN HEADER ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-2">
         {/* Mobile Menu Hamburger */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen((v) => !v)}
-          className="md:hidden p-2 rounded-xl bg-bg-card border border-bg-border text-content-secondary"
+          className="md:hidden p-1.5 rounded-xl bg-bg-card border border-bg-border text-content-secondary shrink-0"
           aria-label="Toggle mobile menu"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-glow">
-            <span className="text-white font-head font-bold text-base sm:text-lg">Rx</span>
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-glow shrink-0">
+            <span className="text-white font-head font-bold text-xs sm:text-lg">Rx</span>
           </div>
-          <div>
-            <span className="font-head font-extrabold text-xl sm:text-2xl text-content-primary tracking-tight">
+          <div className="min-w-0">
+            <span className="font-head font-extrabold text-sm sm:text-2xl text-content-primary tracking-tight truncate block">
               Health<span className="text-primary-400">Mart</span>
             </span>
-            <span className="block text-[9px] text-content-muted -mt-1 font-semibold tracking-wider uppercase">
+            <span className="hidden sm:block text-[9px] text-content-muted -mt-1 font-semibold tracking-wider uppercase">
               PharmaSYS
             </span>
           </div>
@@ -192,7 +192,7 @@ export default function Header() {
         </form>
 
         {/* Right Section Icons */}
-        <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
           <div className="hidden xl:flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-accent-500/10 text-accent-400 flex items-center justify-center">
               <Phone className="w-4 h-4" />
@@ -205,12 +205,12 @@ export default function Header() {
 
           <Link
             to="/wishlist"
-            className="relative p-2 text-content-secondary hover:text-content-primary transition-colors"
+            className="relative p-1.5 sm:p-2 text-content-secondary hover:text-content-primary transition-colors"
             title="Wishlist"
           >
-            <Heart className="w-5 h-5" />
+            <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
             {wishlistCount > 0 && (
-              <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-red-500 text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center">
                 {wishlistCount}
               </span>
             )}
@@ -220,12 +220,12 @@ export default function Header() {
             type="button"
             onClick={openDrawer}
             aria-label="Open cart drawer"
-            className="flex items-center gap-2 bg-bg-card border border-bg-border hover:border-primary-500/50 px-3 py-1.5 rounded-full text-content-primary transition-all cursor-pointer"
+            className="flex items-center gap-1.5 bg-bg-card border border-bg-border hover:border-primary-500/50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-content-primary transition-all cursor-pointer"
           >
             <div className="relative">
               <ShoppingBag className="w-4 h-4 text-primary-400" />
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-accent-500 text-bg-base text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-accent-500 text-bg-base text-[8px] sm:text-[9px] font-bold flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
@@ -237,7 +237,9 @@ export default function Header() {
           </button>
 
           {/* Theme Selector Dropdown */}
-          <ThemeSelector />
+          <div className="hidden xs:block">
+            <ThemeSelector />
+          </div>
 
           {isConsumerLoggedIn ? (
             <div className="relative">
