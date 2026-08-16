@@ -78,16 +78,25 @@ export const VariantManager: React.FC = () => {
   const [metaPairs, setMetaPairs] = useState<KeyValuePair[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const fetchInitialData = async () => {
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  const fetchVariants = async () => {
     setIsLoading(true);
     try {
-      const [varData, prodsData] = await Promise.all([
-        adminCatalogApi.getVariants(),
-        adminCatalogApi.getProducts(),
-      ]);
-      setVariants(varData);
-      setProducts(prodsData);
-      if (prodsData.length > 0) setProductId(prodsData[0].id);
+      const varData = await adminCatalogApi.getVariants({
+        page: currentPage,
+        page_size: itemsPerPage,
+        search: searchQuery,
+        status: statusFilter,
+      });
+
+      if (typeof varData === 'object' && varData !== null && 'results' in varData) {
+        setVariants(varData.results);
+        setTotalCount(varData.count);
+      } else if (Array.isArray(varData)) {
+        setVariants(varData);
+        setTotalCount(varData.length);
+      }
     } catch {
       toast.error('Failed to load variants from API');
     } finally {
@@ -96,7 +105,16 @@ export const VariantManager: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchInitialData();
+    fetchVariants();
+  }, [currentPage, itemsPerPage, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (products.length === 0) {
+      adminCatalogApi.getProducts().then((prodsData) => {
+        setProducts(prodsData);
+        if (prodsData.length > 0 && !productId) setProductId(prodsData[0].id);
+      }).catch(() => {});
+    }
   }, []);
 
   const openCreateModal = () => {
@@ -292,7 +310,7 @@ export const VariantManager: React.FC = () => {
       }
 
       setIsModalOpen(false);
-      fetchInitialData();
+      fetchVariants();
     } catch {
       toast.error('Failed to save variant via API');
     } finally {
@@ -305,29 +323,14 @@ export const VariantManager: React.FC = () => {
       await adminCatalogApi.deleteVariant(id);
       toast.success('Variant deleted successfully!');
       setDeleteConfirmId(null);
-      fetchInitialData();
+      fetchVariants();
     } catch {
       toast.error('Failed to delete variant');
     }
   };
 
-  const filteredVariants = variants.filter((v) => {
-    const matchesSearch =
-      v.variant_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.sku.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || v.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
-
-  const totalPages = Math.ceil(filteredVariants.length / itemsPerPage);
-  const paginatedVariants = filteredVariants.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const paginatedVariants = variants;
 
   return (
     <div className="space-y-6">
@@ -349,7 +352,7 @@ export const VariantManager: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={fetchInitialData}
+            onClick={fetchVariants}
             className="p-2.5 rounded-xl bg-bg-surface hover:bg-bg-hover text-content-secondary border border-bg-border transition-colors"
             title="Refresh Variants"
           >
@@ -399,7 +402,7 @@ export const VariantManager: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mx-auto" />
             <p className="text-xs text-content-muted">Loading variants from API...</p>
           </div>
-        ) : filteredVariants.length === 0 ? (
+        ) : variants.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <TagPlus className="w-10 h-10 text-content-muted mx-auto opacity-40" />
             <p className="text-sm font-bold text-content-secondary">No Variants Found</p>
@@ -522,7 +525,7 @@ export const VariantManager: React.FC = () => {
             <AdminPagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={filteredVariants.length}
+              totalItems={totalCount}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
               onItemsPerPageChange={setItemsPerPage}

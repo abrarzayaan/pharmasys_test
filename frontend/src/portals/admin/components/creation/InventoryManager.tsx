@@ -20,6 +20,7 @@ import {
 import toast from 'react-hot-toast';
 import { adminCatalogApi, type InventoryItem } from '../../api/adminCatalog.api';
 import type { AdminVariantItem } from '../../types/admin.types';
+import { AdminPagination } from '../AdminPagination';
 
 export const InventoryManager: React.FC = () => {
   const [inventories, setInventories] = useState<InventoryItem[]>([]);
@@ -55,19 +56,37 @@ export const InventoryManager: React.FC = () => {
   const [reorderLevel, setReorderLevel] = useState<number>(10);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const [invData, varData, venData] = await Promise.all([
-        adminCatalogApi.getInventories(),
-        adminCatalogApi.getVariants(),
+      const [invRes, varData, venData] = await Promise.all([
+        adminCatalogApi.getInventories({
+          page: currentPage,
+          page_size: itemsPerPage,
+          search: searchQuery,
+          status: statusFilter,
+        }),
+        adminCatalogApi.getVariants({ page_size: 100 }),
         adminCatalogApi.getVendors(),
       ]);
-      setInventories(invData);
-      setVariants(varData);
+
+      if (typeof invRes === 'object' && invRes !== null && 'results' in invRes) {
+        setInventories(invRes.results);
+        setTotalCount(invRes.count);
+      } else if (Array.isArray(invRes)) {
+        setInventories(invRes);
+        setTotalCount(invRes.length);
+      }
+
+      const varList = Array.isArray(varData) ? varData : (varData?.results || []);
+      setVariants(varList);
       setVendors(venData);
-      if (varData.length > 0) setVariantId(varData[0].id);
-      if (venData.length > 0) setVendorId(venData[0].id);
+      if (varList.length > 0 && !variantId) setVariantId(varList[0].id);
+      if (venData.length > 0 && !vendorId) setVendorId(venData[0].id);
       if (venData.length > 0 && !bulkVendorId) setBulkVendorId(venData[0].id);
     } catch {
       toast.error('Failed to load inventory from API');
@@ -78,7 +97,7 @@ export const InventoryManager: React.FC = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [currentPage, itemsPerPage, searchQuery, statusFilter, vendorFilter]);
 
   const openCreateModal = () => {
     setEditingInventory(null);
@@ -384,101 +403,111 @@ export const InventoryManager: React.FC = () => {
             <p className="text-xs text-content-muted">Try selecting a different vendor or status filter</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-content-secondary">
-              <thead className="bg-bg-surface text-content-muted font-mono uppercase text-[10px] border-b border-bg-border">
-                <tr>
-                  <th className="py-3.5 px-4 font-bold">ID</th>
-                  <th className="py-3.5 px-4 font-bold">Product Variant</th>
-                  <th className="py-3.5 px-4 font-bold">Vendor Store Hub</th>
-                  <th className="py-3.5 px-4 font-bold">Physical Stock</th>
-                  <th className="py-3.5 px-4 font-bold">Available Stock</th>
-                  <th className="py-3.5 px-4 font-bold">Status</th>
-                  <th className="py-3.5 px-4 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-bg-border">
-                {filteredInventories.map((inv) => {
-                  const available = inv.available_stock !== undefined
-                    ? inv.available_stock
-                    : Math.max(0, inv.stock_qty - inv.reserved_qty - inv.damaged_qty);
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-content-secondary">
+                <thead className="bg-bg-surface text-content-muted font-mono uppercase text-[10px] border-b border-bg-border">
+                  <tr>
+                    <th className="py-3.5 px-4 font-bold">ID</th>
+                    <th className="py-3.5 px-4 font-bold">Product Variant</th>
+                    <th className="py-3.5 px-4 font-bold">Vendor Store Hub</th>
+                    <th className="py-3.5 px-4 font-bold">Physical Stock</th>
+                    <th className="py-3.5 px-4 font-bold">Available Stock</th>
+                    <th className="py-3.5 px-4 font-bold">Status</th>
+                    <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-bg-border">
+                  {filteredInventories.map((inv) => {
+                    const available = inv.available_stock !== undefined
+                      ? inv.available_stock
+                      : Math.max(0, inv.stock_qty - inv.reserved_qty - inv.damaged_qty);
 
-                  return (
-                    <tr key={inv.id} className="hover:bg-bg-hover/50 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-content-muted">
-                        #{inv.id}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-head font-bold text-content-primary text-sm">
-                          {inv.variant_name || `Variant #${inv.variant}`}
-                        </div>
-                        {inv.product_name && (
-                          <div className="text-[11px] text-content-muted">{inv.product_name}</div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center space-x-1.5 text-content-primary font-bold">
-                          <Store className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{inv.vendor_name || 'Central Pharmacy Hub'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 space-y-0.5 font-mono">
-                        <div className="font-bold text-content-primary text-sm">
-                          {inv.stock_qty} Pcs
-                        </div>
-                        <div className="text-[10px] text-content-muted">
-                          Reserved: {inv.reserved_qty} | Damaged: {inv.damaged_qty}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 text-sm">
-                        {available} Pcs
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold inline-flex items-center space-x-1 ${
-                            inv.status === 'in_stock'
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : inv.status === 'low_stock'
-                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                              : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                          }`}
-                        >
+                    return (
+                      <tr key={inv.id} className="hover:bg-bg-hover/50 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-content-muted">
+                          #{inv.id}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-head font-bold text-content-primary text-sm">
+                            {inv.variant_name || `Variant #${inv.variant}`}
+                          </div>
+                          {inv.product_name && (
+                            <div className="text-[11px] text-content-muted">{inv.product_name}</div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center space-x-1.5 text-content-primary font-bold">
+                            <Store className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{inv.vendor_name || 'Central Pharmacy Hub'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 space-y-0.5 font-mono">
+                          <div className="font-bold text-content-primary text-sm">
+                            {inv.stock_qty} Pcs
+                          </div>
+                          <div className="text-[10px] text-content-muted">
+                            Reserved: {inv.reserved_qty} | Damaged: {inv.damaged_qty}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 text-sm">
+                          {available} Pcs
+                        </td>
+                        <td className="py-3.5 px-4">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold inline-flex items-center space-x-1 ${
                               inv.status === 'in_stock'
-                                ? 'bg-emerald-400'
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                                 : inv.status === 'low_stock'
-                                ? 'bg-amber-400'
-                                : 'bg-rose-400'
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                             }`}
-                          />
-                          <span className="capitalize">{inv.status.replace('_', ' ')}</span>
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => openEditModal(inv)}
-                            className="p-1.5 rounded-lg bg-bg-surface hover:bg-amber-500/20 text-amber-400 border border-bg-border transition-colors"
-                            title="Edit Stock"
                           >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(inv.id)}
-                            className="p-1.5 rounded-lg bg-bg-surface hover:bg-rose-500/20 text-rose-400 border border-bg-border transition-colors"
-                            title="Delete Inventory Record"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                inv.status === 'in_stock'
+                                  ? 'bg-emerald-400'
+                                  : inv.status === 'low_stock'
+                                  ? 'bg-amber-400'
+                                  : 'bg-rose-400'
+                              }`}
+                            />
+                            <span className="capitalize">{inv.status.replace('_', ' ')}</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => openEditModal(inv)}
+                              className="p-1.5 rounded-lg bg-bg-surface hover:bg-amber-500/20 text-amber-400 border border-bg-border transition-colors"
+                              title="Edit Stock"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(inv.id)}
+                              className="p-1.5 rounded-lg bg-bg-surface hover:bg-rose-500/20 text-rose-400 border border-bg-border transition-colors"
+                              title="Delete Inventory Record"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <AdminPagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalCount / itemsPerPage)}
+              totalItems={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </>
         )}
       </div>
 

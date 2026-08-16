@@ -1,5 +1,6 @@
 # pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions
+from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.products.models import ProductVariant, ProductImage
 from apps.products.serializers import ProductVariantSerializer, ProductImageSerializer
@@ -14,16 +15,18 @@ class StandardResultsSetPagination(PageNumberPagination):
 class ProductVariantViewSet(viewsets.ModelViewSet):
     serializer_class = ProductVariantSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['product', 'status']
+    search_fields = ['variant_name', 'sku', 'barcode', 'product__name']
 
     def get_queryset(self):
         user = self.request.user
+        qs = ProductVariant.objects.select_related('product', 'product__category', 'product__brand').prefetch_related('images')
         if user.is_authenticated and (user.is_staff or user.is_superuser):
-            return ProductVariant.objects.prefetch_related('images').all()
+            return qs.all()
         elif user.is_authenticated and hasattr(user, 'vendor_profile'):
-            return ProductVariant.objects.prefetch_related('images').filter(product__vendor__user=user)
-        return ProductVariant.objects.prefetch_related('images').all()
+            return qs.filter(product__vendor__user=user)
+        return qs.all()
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -31,7 +34,7 @@ class ProductVariantViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
 class ProductImageViewSet(viewsets.ModelViewSet):
-    queryset = ProductImage.objects.all()
+    queryset = ProductImage.objects.select_related('variant').all()
     serializer_class = ProductImageSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['variant', 'is_primary']

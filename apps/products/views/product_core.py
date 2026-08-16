@@ -20,7 +20,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     - Vendors can only manage (Update/Delete) their OWN products.
     """
     serializer_class = ProductSerializer
-    pagination_class = StandardResultsSetPagination # <--- এই লাইনটি যুক্ত করে দিতে পারেন
+    pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['category', 'brand', 'product_type', 'status', 'approval_status']
     search_fields = ['name', 'sku', 'barcode']
@@ -28,11 +28,12 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = Product.objects.select_related('category', 'brand', 'vendor').filter(deleted_at__isnull=True)
         if user.is_authenticated and (user.is_staff or user.is_superuser):
-            return Product.objects.all()
+            return qs
         elif user.is_authenticated and hasattr(user, 'vendor_profile'): 
-            return Product.objects.filter(vendor__user=user, deleted_at__isnull=True)
-        return Product.objects.all()
+            return qs.filter(vendor__user=user)
+        return qs
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -40,5 +41,4 @@ class ProductViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def perform_destroy(self, instance):
-        # ডাটাবেস থেকে পার্মানেন্টলি ডিলিট না করে সফট ডিলিট করা
         instance.soft_delete()

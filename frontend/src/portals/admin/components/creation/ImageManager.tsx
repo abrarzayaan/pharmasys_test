@@ -15,6 +15,7 @@ import {
 import toast from 'react-hot-toast';
 import { adminCatalogApi, type ProductImageItem } from '../../api/adminCatalog.api';
 import type { AdminVariantItem } from '../../types/admin.types';
+import { AdminPagination } from '../AdminPagination';
 
 export const ImageManager: React.FC = () => {
   const [images, setImages] = useState<ProductImageItem[]>([]);
@@ -33,16 +34,33 @@ export const ImageManager: React.FC = () => {
   const [isPrimary, setIsPrimary] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const [imgData, varData] = await Promise.all([
-        adminCatalogApi.getImages(selectedVariantId === 'ALL' ? undefined : selectedVariantId),
-        adminCatalogApi.getVariants(),
+      const [imgRes, varData] = await Promise.all([
+        adminCatalogApi.getImages(
+          selectedVariantId === 'ALL'
+            ? { page: currentPage, page_size: itemsPerPage }
+            : { page: currentPage, page_size: itemsPerPage, variant: selectedVariantId }
+        ),
+        adminCatalogApi.getVariants({ page_size: 100 }),
       ]);
-      setImages(imgData);
-      setVariants(varData);
-      if (varData.length > 0 && !targetVariantId) setTargetVariantId(varData[0].id);
+
+      if (typeof imgRes === 'object' && imgRes !== null && 'results' in imgRes) {
+        setImages(imgRes.results);
+        setTotalCount(imgRes.count);
+      } else if (Array.isArray(imgRes)) {
+        setImages(imgRes);
+        setTotalCount(imgRes.length);
+      }
+
+      const varList = Array.isArray(varData) ? varData : (varData?.results || []);
+      setVariants(varList);
+      if (varList.length > 0 && !targetVariantId) setTargetVariantId(varList[0].id);
     } catch {
       toast.error('Failed to load images from API');
     } finally {
@@ -52,7 +70,7 @@ export const ImageManager: React.FC = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, [selectedVariantId]);
+  }, [selectedVariantId, currentPage, itemsPerPage]);
 
   const openUploadModal = () => {
     if (variants.length > 0) setTargetVariantId(variants[0].id);
@@ -250,6 +268,17 @@ export const ImageManager: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {images.length > 0 && (
+        <AdminPagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalCount / itemsPerPage)}
+          totalItems={totalCount}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       )}
 
       {/* UPLOAD MODAL */}

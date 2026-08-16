@@ -409,29 +409,22 @@ export const adminCatalogApi = {
     }
   },
 
-  getProductsDetailed: async (): Promise<ProductItem[]> => {
+  getProductsDetailed: async (params?: { page?: number; page_size?: number; search?: string; status?: string }): Promise<{ results: ProductItem[]; count: number }> => {
     try {
-      const res = await api.get('/products/products/', { params: { page_size: 1000 } });
+      const queryParams: Record<string, any> = { page: 1, page_size: 20 };
+      if (params) {
+        if (params.page) queryParams.page = params.page;
+        if (params.page_size) queryParams.page_size = params.page_size;
+        if (params.search) queryParams.search = params.search;
+        if (params.status && params.status !== 'ALL') queryParams.status = params.status;
+      }
+      const res = await api.get('/products/products/', { params: queryParams });
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return localProductsStore.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: 1,
-        category_name: p.category_name,
-        status: 'active',
-        meta: {},
-      }));
+      if (Array.isArray(data)) return { results: data, count: data.length };
+      if (data && Array.isArray(data.results)) return { results: data.results, count: data.count || data.results.length };
+      return { results: [], count: 0 };
     } catch {
-      return localProductsStore.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: 1,
-        category_name: p.category_name,
-        status: 'active',
-        meta: {},
-      }));
+      return { results: [], count: 0 };
     }
   },
 
@@ -485,32 +478,26 @@ export const adminCatalogApi = {
   },
 
   // ── VARIANT CRUD ──────────────────────────────────────────
-  getVariants: async (searchQuery?: string, categoryFilter?: string): Promise<AdminVariantItem[]> => {
+  getVariants: async (params?: { page?: number; page_size?: number; search?: string; category?: string; status?: string } | string, categoryFilter?: string): Promise<{ results: AdminVariantItem[]; count: number } | AdminVariantItem[]> => {
     try {
-      const params: Record<string, any> = { page_size: 1000 };
-      if (searchQuery) params.search = searchQuery;
-      if (categoryFilter && categoryFilter !== 'ALL') params.category = categoryFilter;
+      let queryParams: Record<string, any> = { page: 1, page_size: 20 };
+      if (typeof params === 'object' && params !== null) {
+        queryParams = { ...queryParams, ...params };
+        if (queryParams.status === 'ALL') delete queryParams.status;
+      } else if (typeof params === 'string') {
+        if (params) queryParams.search = params;
+        if (categoryFilter && categoryFilter !== 'ALL') queryParams.category = categoryFilter;
+      }
 
-      const res = await api.get('/products/variants/', { params });
+      const res = await api.get('/products/variants/', { params: queryParams });
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return localVariantsStore;
+      if (Array.isArray(data)) return typeof params === 'string' ? data : { results: data, count: data.length };
+      if (data && Array.isArray(data.results)) {
+        return typeof params === 'string' ? data.results : { results: data.results, count: data.count || data.results.length };
+      }
+      return typeof params === 'string' ? localVariantsStore : { results: localVariantsStore, count: localVariantsStore.length };
     } catch {
-      let result = [...localVariantsStore];
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        result = result.filter(
-          (v) =>
-            v.product_name.toLowerCase().includes(q) ||
-            v.sku.toLowerCase().includes(q) ||
-            v.variant_name.toLowerCase().includes(q)
-        );
-      }
-      if (categoryFilter && categoryFilter !== 'ALL') {
-        result = result.filter((v) => v.category_name === categoryFilter);
-      }
-      return result;
+      return typeof params === 'string' ? localVariantsStore : { results: localVariantsStore, count: localVariantsStore.length };
     }
   },
 
@@ -662,17 +649,24 @@ export const adminCatalogApi = {
   },
 
   // ── PRODUCT IMAGES CRUD ──────────────────────────────────────────
-  getImages: async (variantId?: number): Promise<ProductImageItem[]> => {
+  getImages: async (params?: { page?: number; page_size?: number; variant?: number; search?: string } | number): Promise<{ results: ProductImageItem[]; count: number } | ProductImageItem[]> => {
     try {
-      const params: Record<string, unknown> = { page_size: 1000 };
-      if (variantId) params.variant = variantId;
-      const res = await api.get('/products/images/', { params });
+      const queryParams: Record<string, unknown> = { page: 1, page_size: 20 };
+      if (typeof params === 'number') {
+        queryParams.variant = params;
+        queryParams.page_size = 1000;
+      } else if (typeof params === 'object' && params !== null) {
+        Object.assign(queryParams, params);
+      }
+      const res = await api.get('/products/images/', { params: queryParams });
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return [];
+      if (Array.isArray(data)) return typeof params === 'number' ? data : { results: data, count: data.length };
+      if (data && Array.isArray(data.results)) {
+        return typeof params === 'number' ? data.results : { results: data.results, count: data.count || data.results.length };
+      }
+      return typeof params === 'number' ? [] : { results: [], count: 0 };
     } catch {
-      return [];
+      return typeof params === 'number' ? [] : { results: [], count: 0 };
     }
   },
 
@@ -705,15 +699,18 @@ export const adminCatalogApi = {
   },
 
   // ── INVENTORY CRUD ──────────────────────────────────────────
-  getInventories: async (): Promise<InventoryItem[]> => {
+  getInventories: async (params?: { page?: number; page_size?: number; search?: string; status?: string }): Promise<{ results: InventoryItem[]; count: number } | InventoryItem[]> => {
     try {
-      const res = await api.get('/products/inventories/', { params: { page_size: 1000 } });
+      const queryParams: Record<string, unknown> = { page: 1, page_size: 20, ...params };
+      const res = await api.get('/products/inventories/', { params: queryParams });
       const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.results)) return data.results;
-      return [];
+      if (Array.isArray(data)) return params ? { results: data, count: data.length } : data;
+      if (data && Array.isArray(data.results)) {
+        return params ? { results: data.results, count: data.count || data.results.length } : data.results;
+      }
+      return params ? { results: [], count: 0 } : [];
     } catch {
-      return [];
+      return params ? { results: [], count: 0 } : [];
     }
   },
 

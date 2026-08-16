@@ -21,6 +21,8 @@ import { adminCatalogApi } from '../api/adminCatalog.api';
 import { BulkDiscountModal } from '../components/BulkDiscountModal';
 import { SingleVariantEditModal } from '../components/SingleVariantEditModal';
 
+import { AdminPagination } from '../components/AdminPagination';
+
 export const CatalogDiscountPage: React.FC = () => {
   const navigate = useNavigate();
   const [variants, setVariants] = useState<AdminVariantItem[]>([]);
@@ -29,6 +31,11 @@ export const CatalogDiscountPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [selectedVariantIds, setSelectedVariantIds] = useState<number[]>([]);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
   // Modals state
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
   const [editingVariant, setEditingVariant] = useState<AdminVariantItem | null>(null);
@@ -36,8 +43,19 @@ export const CatalogDiscountPage: React.FC = () => {
   const loadVariants = async () => {
     setLoading(true);
     try {
-      const data = await adminCatalogApi.getVariants(searchQuery, categoryFilter);
-      setVariants(data);
+      const data = await adminCatalogApi.getVariants({
+        page: currentPage,
+        page_size: itemsPerPage,
+        search: searchQuery,
+        category: categoryFilter === 'ALL' ? undefined : categoryFilter,
+      });
+      if (typeof data === 'object' && data !== null && 'results' in data) {
+        setVariants(data.results);
+        setTotalCount(data.count);
+      } else if (Array.isArray(data)) {
+        setVariants(data);
+        setTotalCount(data.length);
+      }
     } catch {
       toast.error('Failed to load catalog variants');
     } finally {
@@ -47,7 +65,7 @@ export const CatalogDiscountPage: React.FC = () => {
 
   useEffect(() => {
     loadVariants();
-  }, [searchQuery, categoryFilter]);
+  }, [currentPage, itemsPerPage, searchQuery, categoryFilter]);
 
   const toggleSelectAll = () => {
     if (selectedVariantIds.length === variants.length) {
@@ -128,7 +146,7 @@ export const CatalogDiscountPage: React.FC = () => {
         <div className="p-4 rounded-2xl bg-bg-card border border-bg-border flex items-center justify-between shadow-card">
           <div>
             <div className="text-xs font-medium text-content-muted">Total Catalog Variants</div>
-            <div className="text-2xl font-mono font-bold text-content-primary mt-1">{variants.length}</div>
+            <div className="text-2xl font-mono font-bold text-content-primary mt-1">{totalCount}</div>
           </div>
           <div className="p-3 rounded-xl bg-primary-500/10 text-primary-400">
             <Tag className="w-5 h-5" />
@@ -195,7 +213,7 @@ export const CatalogDiscountPage: React.FC = () => {
           </div>
 
           <div className="text-xs text-content-muted font-mono">
-            Showing {variants.length} product variants
+            Showing {variants.length} of {totalCount} product variants
           </div>
         </div>
 
@@ -319,6 +337,14 @@ export const CatalogDiscountPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <AdminPagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalCount / itemsPerPage)}
+          totalItems={totalCount}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Bulk Discount Modal */}

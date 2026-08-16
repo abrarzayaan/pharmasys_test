@@ -47,19 +47,19 @@ export const ProductManager: React.FC = () => {
   const [metaPairs, setMetaPairs] = useState<KeyValuePair[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const fetchInitialData = async () => {
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const [prodsData, catsData, brandsData] = await Promise.all([
-        adminCatalogApi.getProductsDetailed(),
-        adminCatalogApi.getCategories(),
-        adminCatalogApi.getBrands(),
-      ]);
-      setProducts(prodsData);
-      setCategories(catsData);
-      setBrands(brandsData);
-      if (catsData.length > 0) setCategory(catsData[0].id);
-      if (brandsData.length > 0) setBrand(brandsData[0].id);
+      const prodsRes = await adminCatalogApi.getProductsDetailed({
+        page: currentPage,
+        page_size: itemsPerPage,
+        search: searchQuery,
+        status: statusFilter,
+      });
+      setProducts(prodsRes.results);
+      setTotalCount(prodsRes.count);
     } catch {
       toast.error('Failed to load products from API');
     } finally {
@@ -68,7 +68,20 @@ export const ProductManager: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchInitialData();
+    fetchProducts();
+  }, [currentPage, itemsPerPage, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (categories.length === 0 || brands.length === 0) {
+      Promise.all([adminCatalogApi.getCategories(), adminCatalogApi.getBrands()])
+        .then(([catsData, brandsData]) => {
+          setCategories(catsData);
+          setBrands(brandsData);
+          if (catsData.length > 0 && !category) setCategory(catsData[0].id);
+          if (brandsData.length > 0 && !brand) setBrand(brandsData[0].id);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const openCreateModal = () => {
@@ -155,7 +168,7 @@ export const ProductManager: React.FC = () => {
       }
 
       setIsModalOpen(false);
-      fetchInitialData();
+      fetchProducts();
     } catch {
       toast.error('Failed to save product via API');
     } finally {
@@ -168,27 +181,14 @@ export const ProductManager: React.FC = () => {
       await adminCatalogApi.deleteProduct(id);
       toast.success('Product deleted successfully!');
       setDeleteConfirmId(null);
-      fetchInitialData();
+      fetchProducts();
     } catch {
       toast.error('Failed to delete product');
     }
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const paginatedProducts = products;
 
   return (
     <div className="space-y-6">
@@ -210,7 +210,7 @@ export const ProductManager: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={fetchInitialData}
+            onClick={fetchProducts}
             className="p-2.5 rounded-xl bg-bg-surface hover:bg-bg-hover text-content-secondary border border-bg-border transition-colors"
             title="Refresh Products"
           >
@@ -260,7 +260,7 @@ export const ProductManager: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-accent-400 mx-auto" />
             <p className="text-xs text-content-muted">Loading products from API...</p>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <PackagePlus className="w-10 h-10 text-content-muted mx-auto opacity-40" />
             <p className="text-sm font-bold text-content-secondary">No Products Found</p>
@@ -359,7 +359,7 @@ export const ProductManager: React.FC = () => {
             <AdminPagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={filteredProducts.length}
+              totalItems={totalCount}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
               onItemsPerPageChange={setItemsPerPage}

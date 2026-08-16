@@ -13,8 +13,9 @@ export const ImageUploadForm: React.FC = () => {
 
   useEffect(() => {
     adminCatalogApi.getVariants().then((vars) => {
-      setVariants(vars);
-      if (vars.length > 0) setSelectedVariantId(vars[0].id);
+      const list = Array.isArray(vars) ? vars : (vars?.results || []);
+      setVariants(list);
+      if (list.length > 0) setSelectedVariantId(list[0].id);
     });
   }, []);
 
