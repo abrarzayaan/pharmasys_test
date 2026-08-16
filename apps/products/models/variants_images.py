@@ -108,7 +108,11 @@ class ProductVariant(models.Model):
         ordering = ['price']
 
     def __str__(self):
-        return f"{self.product.name} - {self.variant_name}"
+        try:
+            prod_name = self.product.name if self.product_id and self.product else "Unknown Product"
+        except Exception:
+            prod_name = "Unknown Product"
+        return f"{prod_name} - {self.variant_name}"
 
 
 # ====================================================================
@@ -139,7 +143,11 @@ class ProductImage(models.Model):
         ordering = ['sort_order']
 
     def __str__(self):
-        return f"Image for {self.variant.variant_name if self.variant else 'Variant'}"
+        try:
+            variant_str = str(self.variant) if self.variant_id and self.variant else "Variant"
+        except Exception:
+            variant_str = "Variant"
+        return f"Image for {variant_str}"
 
     def save(self, *args, **kwargs):
         if self.image_url:

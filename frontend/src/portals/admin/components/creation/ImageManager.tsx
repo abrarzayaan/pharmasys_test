@@ -74,6 +74,11 @@ export const ImageManager: React.FC = () => {
       return;
     }
 
+    if (selectedFile && !selectedFile.type.startsWith('image/')) {
+      toast.error('Only valid image files (JPEG, PNG, WEBP, GIF) are allowed!');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
@@ -81,6 +86,7 @@ export const ImageManager: React.FC = () => {
       formData.append('is_primary', String(isPrimary));
 
       if (selectedFile) {
+        formData.append('image_url', selectedFile);
         formData.append('image', selectedFile);
       } else {
         formData.append('image_url', imageUrlInput.trim());

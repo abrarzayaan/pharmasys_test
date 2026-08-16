@@ -23,10 +23,12 @@ from apps.products.views.cms_views import (
     CmsHeroSlideListCreateView,
     CmsHeroSlideDetailView,
     CmsAnnouncementBarView,
+    UniversalImageUploadView,
 )
 
 # ইউআরএল প্যাটার্নস
 urlpatterns = [
+    path('upload-image/', UniversalImageUploadView.as_view(), name='universal-image-upload'),
     path('cms/hero-slides/', CmsHeroSlideListCreateView.as_view(), name='cms-hero-slides-list'),
     path('cms/hero-slides/<int:pk>/', CmsHeroSlideDetailView.as_view(), name='cms-hero-slide-detail'),
     path('cms/announcement-bar/', CmsAnnouncementBarView.as_view(), name='cms-announcement-bar'),

@@ -57,23 +57,24 @@ export const CmsBannerPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      toast.error('Only valid image files (JPEG, PNG, WEBP, GIF) are allowed!');
+      return;
+    }
+
     setIsUploadingImage(true);
-    const toastId = toast.loading('Uploading image to ImgBB Cloud CDN...');
+    const toastId = toast.loading('Compressing to WebP & Uploading to ImgBB...');
 
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await axios.post('https://api.imgbb.com/1/upload?key=6ae6f2084f448bf93ad41c4b2c0a2053', formData);
-
-      const imageUrl = res.data?.data?.url;
+      const imageUrl = await adminCmsApi.uploadCmsImage(file);
       if (imageUrl) {
         setFormImageUrl(imageUrl);
-        toast.success('Image uploaded to ImgBB successfully!', { id: toastId });
+        toast.success('Image optimized & saved to ImgBB successfully!', { id: toastId });
       } else {
         toast.error('Failed to receive image URL from ImgBB', { id: toastId });
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error?.message || err?.message || 'ImgBB upload failed', { id: toastId });
+      toast.error(err?.response?.data?.error || err?.message || 'ImgBB upload failed', { id: toastId });
     } finally {
       setIsUploadingImage(false);
     }

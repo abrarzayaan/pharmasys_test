@@ -82,28 +82,43 @@ const defaultAnnouncement: AnnouncementBarConfig = {
   cta_url: '/account/orders',
 };
 
-const sanitizeSlide = (slide: any, index: number): HeroBannerSlide => ({
-  id: Number(slide?.id) || index + 1,
-  type: ['main_hero', 'side_top', 'side_bottom_left', 'side_bottom_right'].includes(slide?.type)
-    ? slide.type
-    : index === 0
-    ? 'main_hero'
-    : index === 1
-    ? 'side_top'
-    : index === 2
-    ? 'side_bottom_left'
-    : 'side_bottom_right',
-  badge_tag: String(slide?.badge || slide?.badge_tag || '⚡ SPECIAL OFFER'),
-  headline: String(slide?.title || slide?.headline || 'Essential Pharmacy Stock'),
-  subheadline: String(slide?.subtitle || slide?.subheadline || 'Authentic medicines delivered to your doorstep.'),
-  cta_text: String(slide?.cta_text || 'Shop Now'),
-  target_url: String(slide?.cta_link || slide?.target_url || '/products'),
-  image_url: String(slide?.image_url || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'),
-  sort_order: Number(slide?.order || slide?.sort_order) || index + 1,
-  is_active: slide?.is_published !== false && slide?.is_active !== false,
-});
+const sanitizeSlide = (slide: any, index: number): HeroBannerSlide => {
+  const slideType = slide?.slide_type || slide?.type;
+  return {
+    id: Number(slide?.id) || index + 1,
+    type: ['main_hero', 'side_top', 'side_bottom_left', 'side_bottom_right'].includes(slideType)
+      ? slideType
+      : index === 0
+      ? 'main_hero'
+      : index === 1
+      ? 'side_top'
+      : index === 2
+      ? 'side_bottom_left'
+      : 'side_bottom_right',
+    badge_tag: String(slide?.badge || slide?.badge_tag || '⚡ SPECIAL OFFER'),
+    headline: String(slide?.title || slide?.headline || 'Essential Pharmacy Stock'),
+    subheadline: String(slide?.subtitle || slide?.subheadline || 'Authentic medicines delivered to your doorstep.'),
+    cta_text: String(slide?.cta_text || 'Shop Now'),
+    target_url: String(slide?.cta_link || slide?.target_url || '/products'),
+    image_url: String(slide?.image_url || ''),
+    sort_order: Number(slide?.order || slide?.sort_order) || index + 1,
+    is_active: slide?.is_published !== false && slide?.is_active !== false,
+  };
+};
 
 export const adminCmsApi = {
+  uploadCmsImage: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await api.post('/api/products/upload-image/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (res.data && res.data.url) {
+      return res.data.url;
+    }
+    throw new Error(res.data?.error || 'Failed to upload image');
+  },
+
   getHeroBanners: async (): Promise<HeroBannerSlide[]> => {
     try {
       const res = await api.get('/api/products/cms/hero-slides/');
@@ -125,6 +140,7 @@ export const adminCmsApi = {
         cta_text: payload.cta_text,
         cta_link: payload.target_url,
         image_url: payload.image_url,
+        slide_type: payload.type,
         is_published: payload.is_active,
         order: payload.sort_order,
       });
@@ -142,6 +158,7 @@ export const adminCmsApi = {
         cta_text: payload.cta_text,
         cta_link: payload.target_url,
         image_url: payload.image_url,
+        slide_type: payload.type,
         is_published: payload.is_active,
         order: payload.sort_order,
       });

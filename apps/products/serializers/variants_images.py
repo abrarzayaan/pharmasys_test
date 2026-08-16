@@ -4,10 +4,49 @@ from apps.products.models import ProductVariant, ProductImage
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    variant_name = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
-        fields = ['id', 'variant', 'image_url', 'is_primary', 'sort_order', 'status', 'created_at']
+        fields = ['id', 'variant', 'variant_name', 'image_url', 'is_primary', 'sort_order', 'status', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def get_variant_name(self, obj):
+        try:
+            return str(obj.variant) if obj.variant else ""
+        except Exception:
+            return ""
+
+    def get_image_url(self, obj):
+        if not obj.image_url:
+            return ""
+        try:
+            return obj.image_url.url
+        except Exception:
+            return str(obj.image_url)
+
+    def to_internal_value(self, data):
+        data_dict = data.dict() if hasattr(data, 'dict') else dict(data)
+        file_or_url = data_dict.get('image_url') or data_dict.get('image')
+        
+        request = self.context.get('request')
+        if not file_or_url and request and hasattr(request, 'FILES'):
+            file_or_url = request.FILES.get('image_url') or request.FILES.get('image')
+
+        if isinstance(file_or_url, list) and len(file_or_url) > 0:
+            file_or_url = file_or_url[0]
+
+        validated_internal = super().to_internal_value(data_dict)
+        validated_internal['_file_or_url'] = file_or_url
+        return validated_internal
+
+    def validate(self, attrs):
+        file_or_url = attrs.pop('_file_or_url', None)
+        if not file_or_url and not self.instance:
+            raise serializers.ValidationError({"image_url": "Please select an image file or provide a valid image URL."})
+        attrs['image_url'] = file_or_url
+        return attrs
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):

@@ -74,10 +74,10 @@ export default function HomePage() {
   });
 
   const safeHeroBanners = Array.isArray(heroBanners) ? heroBanners : [];
-  const mainSlide = safeHeroBanners.find((s) => s && s.type === 'main_hero' && s.is_active) || safeHeroBanners[0];
-  const sideTopSlide = safeHeroBanners.find((s) => s && s.type === 'side_top' && s.is_active) || safeHeroBanners[1];
-  const sideBottomLeftSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_left' && s.is_active) || safeHeroBanners[2];
-  const sideBottomRightSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_right' && s.is_active) || safeHeroBanners[3];
+  const mainSlide = safeHeroBanners.find((s) => s && s.type === 'main_hero' && s.is_active) || safeHeroBanners.find((s) => s && s.type === 'main_hero') || safeHeroBanners[0];
+  const sideTopSlide = safeHeroBanners.find((s) => s && s.type === 'side_top' && s.is_active) || safeHeroBanners.find((s) => s && s.type === 'side_top') || safeHeroBanners[1];
+  const sideBottomLeftSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_left' && s.is_active) || safeHeroBanners.find((s) => s && s.type === 'side_bottom_left') || safeHeroBanners[2];
+  const sideBottomRightSlide = safeHeroBanners.find((s) => s && s.type === 'side_bottom_right' && s.is_active) || safeHeroBanners.find((s) => s && s.type === 'side_bottom_right') || safeHeroBanners[3];
 
   // 1. Quick Access Essentials (Filtered by v.meta?.is_featured || v.meta?.is_quick_access, limited to max 6)
   const quickAccessVariants = useMemo(() => {
