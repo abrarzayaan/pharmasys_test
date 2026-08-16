@@ -1,5 +1,13 @@
 import api from '@/api/axios';
 
+export interface ActiveRiderOrder {
+  id: number;
+  order_number: string;
+  order_status: string;
+  delivery_address: string;
+  placed_at?: string;
+}
+
 export interface AdminRiderItem {
   id: number;
   rider_name: string;
@@ -11,6 +19,8 @@ export interface AdminRiderItem {
   license_no: string;
   availability_status: 'online' | 'offline' | 'busy';
   verification_status: 'pending' | 'verified' | 'rejected';
+  is_free: boolean;
+  active_orders: ActiveRiderOrder[];
   joined_date?: string;
 }
 

@@ -25,6 +25,14 @@ User = get_user_model()
 
 
 def get_or_create_vendor_profile(user):
+    from apps.authentication.models import UserRole
+    is_rider = UserRole.objects.filter(user=user, role__name__iexact='rider').exists()
+    if user.is_superuser or user.is_staff or is_rider:
+        try:
+            return VendorProfile.objects.get(user=user)
+        except VendorProfile.DoesNotExist:
+            raise ValueError("User is not a vendor account.")
+
     base_slug = slugify(user.username or user.first_name or "vendor")
     slug = base_slug
     counter = 1
@@ -83,14 +91,16 @@ class VendorRegisterView(APIView):
             )
 
         try:
-            # 1. Create User
+            # 1. Create User & Assign Vendor Role
             user = User.objects.create_user(
                 username=username,
                 email=email or f"{username}@pharmasys.com",
                 password=password,
                 phone_number=phone,
-                role='VENDOR',
             )
+            from apps.authentication.models import Role, UserRole
+            vendor_role, _ = Role.objects.get_or_create(name='vendor')
+            UserRole.objects.get_or_create(user=user, role=vendor_role)
 
             # 2. Create Address
             address_obj = Address.objects.create(

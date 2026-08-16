@@ -15,11 +15,18 @@ User = get_user_model()
 class AdminVendorListView(APIView):
     """
     Admin Endpoint to list all registered vendor profiles with status filters and search.
+    Strictly filters to only show vendor accounts (excludes riders, staff, and superadmins).
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        queryset = VendorProfile.objects.select_related('user', 'address').order_by('-created_at')
+        queryset = VendorProfile.objects.select_related('user', 'address').exclude(
+            user__is_superuser=True
+        ).exclude(
+            user__is_staff=True
+        ).exclude(
+            user__userrole__role__name__iexact='rider'
+        ).order_by('-created_at')
 
         ver_status = request.query_params.get('verification_status')
         if ver_status:
@@ -118,11 +125,18 @@ class AdminVendorDetailView(APIView):
 class AdminRiderListView(APIView):
     """
     Admin Endpoint to list all registered rider profiles with status filters and search.
+    Strictly filters to only show rider accounts (excludes vendors, staff, and superadmins).
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        queryset = RiderProfile.objects.select_related('user').order_by('-created_at')
+        queryset = RiderProfile.objects.select_related('user').exclude(
+            user__is_superuser=True
+        ).exclude(
+            user__is_staff=True
+        ).exclude(
+            user__userrole__role__name__iexact='vendor'
+        ).order_by('-created_at')
 
         ver_status = request.query_params.get('verification_status')
         if ver_status:
@@ -144,8 +158,32 @@ class AdminRiderListView(APIView):
                 license_no__icontains=search
             )
 
+        from apps.orders.models.order import Order
+
         data = []
         for r in queryset:
+            active_orders_qs = Order.objects.filter(
+                assigned_rider=r
+            ).exclude(
+                order_status__in=['delivered', 'cancelled', 'DELIVERED', 'CANCELLED']
+            ).order_by('-created_at')
+
+            active_orders = []
+            for o in active_orders_qs:
+                addr = ""
+                if isinstance(o.address_snapshot, dict):
+                    addr = o.address_snapshot.get("full_address") or o.address_snapshot.get("area", "")
+                if not addr and o.address:
+                    addr = o.address.full_address
+
+                active_orders.append({
+                    "id": o.id,
+                    "order_number": o.order_number,
+                    "order_status": o.order_status,
+                    "delivery_address": addr or "Address details unavailable",
+                    "placed_at": o.placed_at.isoformat() if o.placed_at else "",
+                })
+
             data.append({
                 "id": r.id,
                 "rider_name": f"{r.user.first_name} {r.user.last_name}".strip() or r.user.username if r.user else f"Rider #{r.id}",
@@ -157,6 +195,8 @@ class AdminRiderListView(APIView):
                 "license_no": r.license_no or "",
                 "availability_status": r.availability_status,
                 "verification_status": r.verification_status,  # 'pending', 'verified', 'rejected'
+                "is_free": len(active_orders) == 0,
+                "active_orders": active_orders,
                 "joined_date": r.created_at.isoformat() if r.created_at else "",
             })
 

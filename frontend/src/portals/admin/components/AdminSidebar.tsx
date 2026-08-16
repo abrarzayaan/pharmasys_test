@@ -61,7 +61,6 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'vendor-verification', label: 'Vendor Verification', path: '/admin/vendor-verification', iconName: 'ShieldCheck', badge: 'NEW', badgeColor: 'amber' },
       { id: 'rider-verification', label: 'Rider Verification', path: '/admin/rider-verification', iconName: 'Bike', badge: 'NEW', badgeColor: 'cyan' },
-      { id: 'vendors', label: 'Vendor Payout Ledger', path: '/admin/vendors', iconName: 'Building2' },
       { id: 'logistics', label: 'Fleet & Rider Tracking', path: '/admin/logistics', iconName: 'Truck' },
     ],
   },

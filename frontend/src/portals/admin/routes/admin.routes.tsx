@@ -19,6 +19,7 @@ import {
   FileCheck2,
   Percent,
   History,
+  Building2,
 } from 'lucide-react';
 
 export const adminRoutes: RouteObject[] = [
@@ -87,7 +88,15 @@ export const adminRoutes: RouteObject[] = [
           },
           {
             path: 'vendors',
-            element: <VendorSettlementPage />,
+            element: (
+              <AdminSectionPlaceholder
+                title="Vendor Financial Settlement & Payout Ledger"
+                sectionNumber="SECTION 10"
+                badgeText="Temporarily Disabled"
+                description="This module is temporarily disabled as requested."
+                icon={Building2}
+              />
+            ),
           },
           {
             path: 'logistics',
