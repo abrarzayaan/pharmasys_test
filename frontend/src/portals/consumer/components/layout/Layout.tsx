@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
@@ -10,6 +10,7 @@ import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
 
 import { useThemeStore } from '@/store/theme.store';
 import { useCart } from '@/hooks/useCart';
+import { useCategoryModalStore } from '@/store/categoryModal.store';
 
 export default function Layout() {
   const { pathname } = useLocation();
@@ -22,27 +23,25 @@ export default function Layout() {
     initTheme();
   }, [initTheme]);
 
-  // Scroll to top on route change
+  // Scroll to top and close category modal on route change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
+    useCategoryModalStore.getState().closeModal();
   }, [pathname]);
 
   return (
     <div className="min-h-screen w-screen max-w-full overflow-x-hidden flex flex-col bg-bg-base relative">
       <Header />
 
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={pathname}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0  }}
-          exit={{    opacity: 0, y: -8 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="flex-1 w-full max-w-full overflow-x-hidden"
-        >
-          <Outlet />
-        </motion.main>
-      </AnimatePresence>
+      <motion.main
+        key={pathname}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
+        className="flex-1 w-full max-w-full overflow-x-hidden"
+      >
+        <Outlet />
+      </motion.main>
 
       <Footer />
 

@@ -126,7 +126,16 @@ export default function CheckoutPage() {
     data: checkoutPreview,
     isLoading: isLoadingPreview,
   } = useQuery({
-    queryKey: ['checkout-preview', selectedAddressId, appliedCoupon, isDirectCheckout, variantId, directQty],
+    queryKey: [
+      'checkout-preview',
+      selectedAddressId,
+      appliedCoupon,
+      isDirectCheckout,
+      variantId,
+      directQty,
+      cartData?.total_items,
+      cartData?.total_price,
+    ],
     queryFn: async () => {
       if (!selectedAddressId) return null;
       if (isDirectCheckout && variantId) {
@@ -145,7 +154,12 @@ export default function CheckoutPage() {
         return res.data;
       }
     },
-    enabled: Boolean(selectedAddressId) && (!isDirectCheckout || Boolean(variantId)),
+    enabled:
+      Boolean(selectedAddressId) &&
+      (isDirectCheckout
+        ? Boolean(variantId)
+        : Boolean(cartData?.items && cartData.items.length > 0)),
+    staleTime: 1000 * 10,
   });
 
   // Create address mutation
@@ -223,12 +237,16 @@ export default function CheckoutPage() {
       }
     },
     onSuccess: (orderData) => {
-      if (!isDirectCheckout) {
-        setItemCount(0); // Immediately reset store item count
-        queryClient.setQueryData(['cart'], null); // Clear TanStack cart cache
-      }
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      setItemCount(0); // Reset Zustand cart item badge
+      useCartStore.getState().closeDrawer();
+      queryClient.setQueryData(['cart'], { items: [], total_items: 0, total_price: '0.00' });
+      queryClient.invalidateQueries({ queryKey: ['cart'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', orderData.id] });
+      queryClient.invalidateQueries({ queryKey: ['order', String(orderData.id)] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail', orderData.id] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail', String(orderData.id)] });
       toast.success('Order placed successfully! 🎉');
       navigate(`/order-success/${orderData.id}`);
     },
@@ -244,6 +262,19 @@ export default function CheckoutPage() {
 
   // Calculate items list to render
   const checkoutItems = useMemo(() => {
+    if (!isDirectCheckout && cartData?.items) {
+      return cartData.items.map((item: any) => ({
+        product_variant_id: item.product_variant?.id || item.variant,
+        product_name: item.product_variant?.product?.name || item.product_name || 'Medicine',
+        variant_name: item.product_variant?.variant_name || item.variant_name,
+        quantity: item.quantity,
+        unit_price: parseFloat(item.unit_price || item.price || '0'),
+        total_price: parseFloat(item.total_price || '0'),
+        is_prescription_required: Boolean(
+          item.product_variant?.is_prescription_required || item.product_variant?.product?.is_prescription_required
+        ),
+      }));
+    }
     if (checkoutPreview?.items && checkoutPreview.items.length > 0) {
       return checkoutPreview.items;
     }
@@ -263,21 +294,8 @@ export default function CheckoutPage() {
         },
       ];
     }
-    if (!isDirectCheckout && cartData?.items) {
-      return cartData.items.map((item: any) => ({
-        product_variant_id: item.product_variant?.id || item.variant,
-        product_name: item.product_variant?.product?.name || item.product_name || 'Medicine',
-        variant_name: item.product_variant?.variant_name || item.variant_name,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.unit_price || item.price || '0'),
-        total_price: parseFloat(item.total_price || '0'),
-        is_prescription_required: Boolean(
-          item.product_variant?.is_prescription_required || item.product_variant?.product?.is_prescription_required
-        ),
-      }));
-    }
     return [];
-  }, [checkoutPreview, isDirectCheckout, directVariantRes, directQty, cartData]);
+  }, [isDirectCheckout, cartData, checkoutPreview, directVariantRes, directQty]);
 
   // Check prescription requirement
   const isRxRequired = useMemo(() => {

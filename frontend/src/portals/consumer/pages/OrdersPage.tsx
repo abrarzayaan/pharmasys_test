@@ -48,6 +48,8 @@ export default function OrdersPage() {
       const list: Order[] = Array.isArray(raw) ? raw : raw.results || [];
       return list;
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const orders = data || [];

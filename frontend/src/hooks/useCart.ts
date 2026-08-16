@@ -25,7 +25,8 @@ export function useCart() {
       return res.data;
     },
     enabled: isLoggedIn,
-    staleTime: 1000 * 30, // 30s stale time
+    staleTime: 1000 * 10, // 10s caching for fast navigation
+    refetchOnWindowFocus: false,
   });
 
   // Sync total item count to Zustand store whenever cart data changes

@@ -52,6 +52,8 @@ export default function OrderDetailPage() {
       return res.data;
     },
     enabled: Boolean(id),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Cancel order mutation

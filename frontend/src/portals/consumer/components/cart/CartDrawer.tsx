@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -32,6 +33,17 @@ export default function CartDrawer() {
     isClearing,
   } = useCart();
 
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const items = cart?.items || [];
   const hasPrescriptionItem = items.some((i) => i.is_prescription_required);
 
@@ -45,6 +57,23 @@ export default function CartDrawer() {
     navigate('/cart');
   };
 
+  const drawerVariants = {
+    hidden: {
+      x: isMobile ? 0 : '100%',
+      y: isMobile ? '100%' : 0,
+    },
+    visible: {
+      x: 0,
+      y: 0,
+      transition: { type: 'spring' as const, damping: 28, stiffness: 280 },
+    },
+    exit: {
+      x: isMobile ? 0 : '100%',
+      y: isMobile ? '100%' : 0,
+      transition: { duration: 0.2, ease: 'easeOut' as const },
+    },
+  };
+
   return (
     <AnimatePresence>
       {isDrawerOpen && (
@@ -55,28 +84,33 @@ export default function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeDrawer}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
           />
 
-          {/* Drawer Container */}
+          {/* Drawer Container (Mobile Bottom Sheet / Desktop Right Drawer) */}
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-bg-card border-l border-bg-border shadow-2xl flex flex-col"
+            variants={drawerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed z-50 bg-bg-card border-bg-border shadow-2xl flex flex-col overflow-hidden
+                       inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border-t border-x
+                       sm:inset-y-0 sm:left-auto sm:right-0 sm:w-full sm:max-w-md sm:max-h-full sm:rounded-none sm:border-l sm:border-t-0"
           >
+            {/* Mobile Drag Indicator Bar */}
+            <div className="w-12 h-1.5 rounded-full bg-bg-border/80 mx-auto mt-2.5 mb-1 shrink-0 sm:hidden" />
+
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-bg-border flex items-center justify-between bg-bg-surface/50">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary-600/20 text-primary-400 border border-primary-500/30 flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5" />
+            <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-bg-border flex items-center justify-between bg-bg-surface/50 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-primary-600/20 text-primary-400 border border-primary-500/30 flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h2 className="font-head font-bold text-base text-content-primary">
+                <div className="min-w-0">
+                  <h2 className="font-head font-bold text-sm sm:text-base text-content-primary truncate">
                     Shopping Cart
                   </h2>
-                  <p className="text-xs text-content-muted">
+                  <p className="text-[11px] sm:text-xs text-content-muted truncate">
                     {cart?.total_items || 0} {cart?.total_items === 1 ? 'item' : 'items'} in your cart
                   </p>
                 </div>
@@ -85,7 +119,7 @@ export default function CartDrawer() {
               <button
                 type="button"
                 onClick={closeDrawer}
-                className="p-2 rounded-xl text-content-muted hover:text-content-primary hover:bg-bg-surface transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-content-muted hover:text-content-primary hover:bg-bg-surface transition-colors shrink-0"
                 aria-label="Close cart drawer"
               >
                 <X className="w-5 h-5" />
@@ -94,14 +128,16 @@ export default function CartDrawer() {
 
             {/* Prescription Warning Banner */}
             {hasPrescriptionItem && (
-              <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center gap-2 text-xs text-amber-300">
+              <div className="bg-amber-500/10 border-b border-amber-500/20 px-3.5 py-2 flex items-center gap-2 text-[11px] sm:text-xs text-amber-300 shrink-0">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                <p>Cart includes prescription items. Rx verification required at checkout.</p>
+                <p className="break-words leading-tight flex-1">
+                  Cart includes prescription items. Rx verification required at checkout.
+                </p>
               </div>
             )}
 
             {/* Content Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 custom-scrollbar">
               {isLoading ? (
                 // Skeleton Loader
                 <div className="space-y-3">
@@ -110,8 +146,8 @@ export default function CartDrawer() {
                       key={n}
                       className="p-3 bg-bg-surface border border-bg-border rounded-xl flex gap-3 animate-pulse"
                     >
-                      <div className="w-16 h-16 rounded-lg bg-bg-border/60 shrink-0" />
-                      <div className="flex-1 space-y-2 py-1">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-bg-border/60 shrink-0" />
+                      <div className="flex-1 space-y-2 py-1 min-w-0">
                         <div className="h-3 bg-bg-border/60 rounded w-3/4" />
                         <div className="h-3 bg-bg-border/60 rounded w-1/2" />
                         <div className="h-4 bg-bg-border/60 rounded w-1/4 pt-1" />
@@ -121,15 +157,15 @@ export default function CartDrawer() {
                 </div>
               ) : items.length === 0 ? (
                 // Empty Cart State
-                <div className="h-full flex flex-col items-center justify-center text-center py-12 px-4 space-y-4">
-                  <div className="w-20 h-20 rounded-2xl bg-bg-surface border border-bg-border flex items-center justify-center text-content-muted">
-                    <PackageX className="w-10 h-10 text-content-muted" />
+                <div className="h-full flex flex-col items-center justify-center text-center py-10 px-4 space-y-3.5">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-bg-surface border border-bg-border flex items-center justify-center text-content-muted">
+                    <PackageX className="w-8 h-8 sm:w-10 sm:h-10 text-content-muted" />
                   </div>
                   <div>
-                    <h3 className="font-head font-bold text-lg text-content-primary">
+                    <h3 className="font-head font-bold text-base sm:text-lg text-content-primary">
                       Your Cart is Empty
                     </h3>
-                    <p className="text-xs text-content-secondary max-w-xs mt-1">
+                    <p className="text-xs text-content-secondary max-w-xs mt-1 leading-relaxed">
                       Looks like you haven't added any medicines or healthcare products yet.
                     </p>
                   </div>
@@ -140,14 +176,14 @@ export default function CartDrawer() {
                     }}
                     variant="primary"
                     size="md"
-                    className="rounded-full gap-2 px-6"
+                    className="rounded-full gap-2 px-6 text-xs sm:text-sm"
                   >
                     Start Shopping <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
               ) : (
                 // Items List
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {items.map((item) => {
                     const isItemUpdating = isUpdating && updatingVariantId === item.variant_id;
                     const isItemRemoving = isRemoving && removingVariantId === item.variant_id;
@@ -164,18 +200,18 @@ export default function CartDrawer() {
                         }`}
                       >
                         {/* Thumbnail Placeholder */}
-                        <div className="w-16 h-16 rounded-xl bg-bg-card border border-bg-border flex items-center justify-center text-primary-400 shrink-0 font-head font-bold text-xs">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-bg-card border border-bg-border flex items-center justify-center text-primary-400 shrink-0 font-head font-bold text-xs">
                           Rx
                         </div>
 
                         {/* Details */}
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h4 className="font-head font-semibold text-xs text-content-primary truncate">
+                          <div className="flex items-start justify-between gap-1.5 min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-head font-semibold text-xs sm:text-sm text-content-primary line-clamp-1 break-words">
                                 {item.product_name}
                               </h4>
-                              <p className="text-[11px] text-content-secondary truncate">
+                              <p className="text-[10px] sm:text-[11px] text-content-secondary line-clamp-1 break-words">
                                 {item.variant_name} • SKU: {item.sku}
                               </p>
                             </div>
@@ -183,7 +219,7 @@ export default function CartDrawer() {
                               type="button"
                               onClick={() => removeItem(item.variant_id)}
                               disabled={isItemRemoving}
-                              className="text-content-muted hover:text-red-400 transition-colors p-1"
+                              className="text-content-muted hover:text-red-400 transition-colors p-1 shrink-0"
                               title="Remove item"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -191,9 +227,9 @@ export default function CartDrawer() {
                           </div>
 
                           {/* Stepper & Price */}
-                          <div className="flex items-center justify-between mt-2 pt-1 border-t border-bg-border/40">
+                          <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-bg-border/40 gap-2">
                             {/* Quantity Stepper */}
-                            <div className="flex items-center bg-bg-card border border-bg-border rounded-lg p-0.5">
+                            <div className="flex items-center bg-bg-card border border-bg-border rounded-lg p-0.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -224,8 +260,8 @@ export default function CartDrawer() {
                             </div>
 
                             {/* Item Price Total */}
-                            <div className="text-right font-mono">
-                              <span className="text-xs font-bold text-accent-400">
+                            <div className="text-right font-mono shrink-0">
+                              <span className="text-xs sm:text-sm font-bold text-accent-400">
                                 {formatCurrency(item.total_price)}
                               </span>
                             </div>
@@ -237,7 +273,7 @@ export default function CartDrawer() {
 
                   {/* Clear Cart Link */}
                   {items.length > 0 && (
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-1 flex justify-end">
                       <button
                         type="button"
                         onClick={() => clearCart()}
@@ -254,26 +290,26 @@ export default function CartDrawer() {
 
             {/* Footer Summary & Action Buttons */}
             {items.length > 0 && (
-              <div className="p-4 sm:p-5 border-t border-bg-border bg-bg-surface/80 space-y-3">
-                <div className="space-y-1.5 text-xs">
+              <div className="p-3.5 sm:p-5 border-t border-bg-border bg-bg-surface/90 space-y-2.5 shrink-0">
+                <div className="space-y-1 text-xs">
                   <div className="flex justify-between text-content-secondary">
                     <span>Subtotal</span>
-                    <span className="font-mono text-content-primary font-bold">
+                    <span className="font-mono text-content-primary font-bold text-sm">
                       {formatCurrency(cart?.total_price || 0)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-content-muted text-[11px]">
+                  <div className="flex justify-between text-content-muted text-[10px] sm:text-[11px]">
                     <span>Taxes & Shipping</span>
                     <span>Calculated at checkout</span>
                   </div>
                 </div>
 
-                <div className="pt-2 space-y-2">
+                <div className="pt-1.5 space-y-2">
                   <Button
                     onClick={handleCheckout}
                     variant="primary"
                     size="md"
-                    className="w-full rounded-xl font-bold gap-2 py-2.5 shadow-glow"
+                    className="w-full rounded-xl font-bold gap-2 py-2.5 text-xs sm:text-sm shadow-glow"
                   >
                     Proceed to Checkout <ArrowRight className="w-4 h-4" />
                   </Button>
@@ -287,9 +323,9 @@ export default function CartDrawer() {
                   </Button>
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-content-muted pt-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-accent-400" />
-                  <span>100% Genuine Medicines & Encrypted Checkout</span>
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-content-muted pt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-accent-400 shrink-0" />
+                  <span className="truncate">100% Genuine Medicines & Encrypted Checkout</span>
                 </div>
               </div>
             )}
@@ -299,3 +335,4 @@ export default function CartDrawer() {
     </AnimatePresence>
   );
 }
+

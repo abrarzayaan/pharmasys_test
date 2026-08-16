@@ -29,6 +29,8 @@ export default function OrderSuccessPage() {
       return res.data;
     },
     enabled: Boolean(id),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   if (isLoading) {

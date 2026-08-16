@@ -8,6 +8,7 @@ export default function MobileNav() {
   const { pathname } = useLocation();
   const itemCount = useCartStore((s) => s.itemCount);
   const openCategoryModal = useCategoryModalStore((s) => s.openModal);
+  const closeCategoryModal = useCategoryModalStore((s) => s.closeModal);
   const isCategoryModalOpen = useCategoryModalStore((s) => s.isOpen);
 
   return (
@@ -19,6 +20,7 @@ export default function MobileNav() {
         {/* Home */}
         <Link
           to="/"
+          onClick={closeCategoryModal}
           aria-label="Home"
           className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors"
         >
@@ -72,6 +74,7 @@ export default function MobileNav() {
         {/* Cart */}
         <Link
           to="/cart"
+          onClick={closeCategoryModal}
           aria-label="Cart"
           className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors"
         >
@@ -105,6 +108,7 @@ export default function MobileNav() {
         {/* Orders */}
         <Link
           to="/account/orders"
+          onClick={closeCategoryModal}
           aria-label="Orders"
           className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors"
         >
@@ -131,6 +135,7 @@ export default function MobileNav() {
         {/* Profile */}
         <Link
           to="/account/profile"
+          onClick={closeCategoryModal}
           aria-label="Profile"
           className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors"
         >
