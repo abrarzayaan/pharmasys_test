@@ -106,6 +106,10 @@ class ProductVariant(models.Model):
     class Meta:
         db_table = 'ph_product_variants'
         ordering = ['price']
+        indexes = [
+            models.Index(fields=['status', 'price']),
+            models.Index(fields=['product', 'status']),
+        ]
 
     def __str__(self):
         try:

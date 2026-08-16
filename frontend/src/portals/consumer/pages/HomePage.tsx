@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import {
   Sparkles,
   Pill,
@@ -54,17 +54,72 @@ export default function HomePage() {
     staleTime: 1000 * 60 * 10,
   });
 
-  // Cached Query for Product Variants
-  const { data: variants = [], isLoading: variantsLoading } = useQuery({
-    queryKey: ['variants-all'],
-    queryFn: async () => {
-      const res = await productsApi.getVariants({ page_size: 100 });
+  const homeSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Cached Query for Product Variants with Infinite Scroll & Pre-fetching
+  const {
+    data: infiniteVariantsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: variantsLoading,
+  } = useInfiniteQuery({
+    queryKey: ['home-variants-infinite'],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await productsApi.getVariants({ page: pageParam, page_size: 36 });
       const raw = res.data;
-      if (Array.isArray(raw)) return raw;
-      return (raw as any).results || [];
+      if (Array.isArray(raw)) return { results: raw, next: null, count: raw.length };
+      return raw;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      if (!lastPage || !lastPage.next) return undefined;
+      try {
+        const url = new URL(lastPage.next);
+        const page = url.searchParams.get('page');
+        return page ? parseInt(page) : undefined;
+      } catch {
+        return undefined;
+      }
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  // Flatten all pages into variants
+  const variants = useMemo(() => {
+    if (!infiniteVariantsData?.pages) return [];
+    const list: ProductVariantItem[] = [];
+    infiniteVariantsData.pages.forEach((page: any) => {
+      const items = Array.isArray(page) ? page : page.results || [];
+      list.push(...items);
+    });
+    return list;
+  }, [infiniteVariantsData]);
+
+  // Total matching items in backend
+  const backendTotalCount = useMemo(() => {
+    if (!infiniteVariantsData?.pages || infiniteVariantsData.pages.length === 0) return 0;
+    const firstPage: any = infiniteVariantsData.pages[0];
+    if (Array.isArray(firstPage)) return firstPage.length;
+    return firstPage.count || variants.length;
+  }, [infiniteVariantsData, variants]);
+
+  // Auto pre-fetch next page when user scrolls near the bottom of All Products section
+  useEffect(() => {
+    if (!homeSentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(homeSentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Cached Query for CMS Hero Banners
   const { data: heroBanners = [] } = useQuery({
@@ -383,28 +438,31 @@ export default function HomePage() {
               <Skeleton key={i} className="h-64 rounded-2xl" />
             ))}
           </div>
-        ) : regularSaleVariants.length > 0 ? (
+        ) : variants.length > 0 ? (
           <div className="space-y-6">
             {/* Products Grid: Responsive Vertical Scroll for Mobile (2-col) & Desktop (6-col) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-              {regularSaleVariants.slice(0, mobileVisibleCount).map((v: any) => (
+              {variants.map((v: any) => (
                 <VariantCard key={v.id} variant={v} />
               ))}
             </div>
 
-            {/* Mobile View Load More / Desktop Full Catalog Navigation */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-bg-border/60">
-              {regularSaleVariants.length > mobileVisibleCount && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMobileVisibleCount((prev) => prev + 12)}
-                  className="w-full sm:w-auto rounded-full px-6 py-2 text-xs font-bold border-primary-500/40 hover:border-primary-500"
-                >
-                  Load More Products ({regularSaleVariants.length - mobileVisibleCount} remaining)
-                </Button>
-              )}
+            {/* Infinite Scroll Sentinel & Pre-fetch Loader for Homepage */}
+            <div ref={homeSentinelRef} className="py-4 flex flex-col items-center justify-center space-y-2">
+              {isFetchingNextPage ? (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-600/10 border border-primary-500/30 text-primary-400 text-xs font-bold animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-primary-400 animate-ping" />
+                  <span>⚡ Pre-fetching more catalog items...</span>
+                </div>
+              ) : !hasNextPage && variants.length > 0 ? (
+                <div className="text-center text-[11px] font-mono text-content-muted py-2 border-t border-bg-border/40 w-full">
+                  ✓ Showing {variants.length} of {backendTotalCount} catalog products
+                </div>
+              ) : null}
+            </div>
 
+            {/* Desktop / Mobile Navigation to Full Shop */}
+            <div className="flex justify-center pt-2">
               <Button
                 variant="primary"
                 size="sm"

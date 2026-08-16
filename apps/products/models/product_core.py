@@ -1,5 +1,8 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.conf import settings  # কাস্টম Auth User (Vendor) মডেল লিঙ্ক করার জন্য
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from .category_brand import Category, Brand
 from apps.profiles.models import VendorProfile  # ভেন্ডর প্রোফাইলের সাথে রিলেশন করার জন্য
@@ -102,6 +105,10 @@ class Product(models.Model):
     class Meta:
         db_table = 'ph_products'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'approval_status', 'deleted_at']),
+            models.Index(fields=['category', 'status', 'deleted_at']),
+        ]
 
     def __str__(self):
         return self.name

@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import {
   Search,
   Filter,
@@ -94,24 +94,79 @@ export default function ProductListPage() {
     staleTime: 1000 * 60 * 10,
   });
 
-  // Cached Fetch Product Variants
-  const { data: rawVariants = [], isLoading: variantsLoading } = useQuery({
-    queryKey: ['variants-list', selectedSubcategoryId],
-    queryFn: async () => {
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Cached Fetch Product Variants with Infinite Scroll & Pre-fetching
+  const {
+    data: infiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: variantsLoading,
+  } = useInfiniteQuery({
+    queryKey: ['variants-infinite', selectedSubcategoryId],
+    queryFn: async ({ pageParam = 1 }) => {
       if (selectedSubcategoryId) {
         const res = await productsApi.getVariantsBySubcategory(selectedSubcategoryId);
         const raw = res.data;
-        if (Array.isArray(raw)) return raw;
-        return (raw as any).results || [];
+        if (Array.isArray(raw)) return { results: raw, next: null, count: raw.length };
+        return raw;
       } else {
-        const res = await productsApi.getVariants({ page_size: 100 });
+        const res = await productsApi.getVariants({ page: pageParam, page_size: 36 });
         const raw = res.data;
-        if (Array.isArray(raw)) return raw;
-        return (raw as any).results || [];
+        if (Array.isArray(raw)) return { results: raw, next: null, count: raw.length };
+        return raw;
+      }
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      if (!lastPage || !lastPage.next) return undefined;
+      try {
+        const url = new URL(lastPage.next);
+        const page = url.searchParams.get('page');
+        return page ? parseInt(page) : undefined;
+      } catch {
+        return undefined;
       }
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  // Flatten all pages into rawVariants
+  const rawVariants = useMemo(() => {
+    if (!infiniteData?.pages) return [];
+    const list: ProductVariantItem[] = [];
+    infiniteData.pages.forEach((page: any) => {
+      const items = Array.isArray(page) ? page : page.results || [];
+      list.push(...items);
+    });
+    return list;
+  }, [infiniteData]);
+
+  // Total matching items in backend
+  const backendTotalCount = useMemo(() => {
+    if (!infiniteData?.pages || infiniteData.pages.length === 0) return 0;
+    const firstPage: any = infiniteData.pages[0];
+    if (Array.isArray(firstPage)) return firstPage.length;
+    return firstPage.count || rawVariants.length;
+  }, [infiniteData, rawVariants]);
+
+  // Auto pre-fetch next page when user scrolls near the bottom
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Filter & Sort logic
   const filteredVariants = useMemo(() => {
@@ -146,7 +201,9 @@ export default function ProductListPage() {
         });
 
       result = result.filter(
-        (item) => allowedCategoryIds.has(item.category_id) || allowedCategoryIds.has((item as any).category)
+        (item) =>
+          (Boolean(item.category_id) && allowedCategoryIds.has(item.category_id as number)) ||
+          (Boolean((item as any).category) && allowedCategoryIds.has((item as any).category))
       );
     }
 
@@ -271,8 +328,8 @@ export default function ProductListPage() {
             <h1 className="font-head font-extrabold text-base sm:text-xl text-content-primary">
               {activeTitle}
             </h1>
-            <span className="px-2 py-0.5 rounded-full bg-primary-600/15 border border-primary-500/30 text-primary-400 text-[11px] font-mono font-bold">
-              {filteredVariants.length} items
+            <span className="px-2.5 py-0.5 rounded-full bg-primary-600/15 border border-primary-500/30 text-primary-400 text-[11px] font-mono font-bold">
+              Showing {filteredVariants.length} of {backendTotalCount} products
             </span>
           </div>
 
@@ -666,11 +723,27 @@ export default function ProductListPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
-              {filteredVariants.map((variant) => (
-                <VariantCard key={variant.id} variant={variant} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
+                {filteredVariants.map((variant) => (
+                  <VariantCard key={variant.id} variant={variant} />
+                ))}
+              </div>
+
+              {/* ── INFINITE SCROLL SENTINEL & BACKGROUND PRE-FETCH LOADER ── */}
+              <div ref={sentinelRef} className="py-6 flex flex-col items-center justify-center space-y-2">
+                {isFetchingNextPage ? (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-600/10 border border-primary-500/30 text-primary-400 text-xs font-bold animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-primary-400 animate-ping" />
+                    <span>⚡ Seamlessly pre-fetching next batch...</span>
+                  </div>
+                ) : !hasNextPage && filteredVariants.length > 0 ? (
+                  <div className="text-center text-[11px] font-mono text-content-muted py-2 border-t border-bg-border/40 w-full">
+                    ✓ All {backendTotalCount} matching medicine variants loaded
+                  </div>
+                ) : null}
+              </div>
+            </>
           )}
         </main>
       </div>
